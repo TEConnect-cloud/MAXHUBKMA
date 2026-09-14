@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>경주마 사다리타기 게임 · 테크커넥트 게임 이벤트</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+
+html { height: 100%; }
+* { box-sizing: border-box; }
+
+body {
+    min-height: 100%;
+    height: auto;
+    margin: 0;
+    font-family: 'Noto Sans KR', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background-color: #e3f2fd;
+    padding: 20px;
+}
+
+.game-container {
+    width: 100%;
+    max-width: 1200px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: calc(100vh - 40px);
+    max-height: 900px;
+    text-align: center;
+    background: white;
+    padding: clamp(15px, 2vw, 30px);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+h1 { color: #1e88e5; margin: 0 0 15px; font-size: clamp(1.5rem, 4vw, 2.2rem); }
+
+.race-wrapper {
+    display: grid;
+    grid-template-columns: 1.5fr 6fr 1.5fr;
+    gap: 15px;
+    min-height: 0;
+    margin: 10px 0;
+}
+
+.lane {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    border: 2px dashed #bbdefb;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.race-track { position: relative; background-color: #ffffff; border-radius: 10px; border: 2px solid #e3f2fd; }
+#path-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+.horse, .prize {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    background: #f5f5f5;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    font-weight: bold;
+    min-height: 45px;
+    font-size: clamp(0.6rem, 1.5vh, 0.9rem);
+}
+.horse { cursor: pointer; transition: transform 0.2s, background-color 0.2s; }
+.horse:hover { transform: scale(1.05); background-color: #e3f2fd; border-color: #42a5f5; }
+.horse.disabled { pointer-events: none; opacity: 0.6; }
+
+.horse-icon-img, .horse-icon-emoji {
+    width: 60px; height: 60px; margin-right: 8px; object-fit: contain;
+    display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0;
+}
+
+.track-point {
+    position: absolute; width: 10px; height: 10px; background-color: #000000;
+    border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.4);
+    transform: translate(-50%, -50%); z-index: 5;
+}
+
+.horse-runner {
+    position: absolute;
+    background-repeat: no-repeat;
+    background-size: 640px 80px;
+    visibility: hidden;
+    offset-path: none;
+    offset-distance: 0%;
+    offset-rotate: 0deg;
+    offset-anchor: center;
+}
+
+#path-svg path { stroke: transparent; stroke-width: 5; fill: none; }
+
+@keyframes run-on-path { to { offset-distance: 100%; } }
+@keyframes run-sprite { from { background-position: 0 0; } to { background-position: -640px 0; } }
+
+.controls { margin-top: 20px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; position: relative; }
+#reset-button, .home-btn {
+    padding: clamp(10px, 2vh, 14px) clamp(20px, 3vw, 30px);
+    font-size: clamp(1rem, 2.5vh, 1.2rem);
+    font-weight: bold; border: none; border-radius: 8px; cursor: pointer;
+    background-color: #42a5f5; color: white; transition: background-color 0.2s; text-decoration: none;
+}
+#reset-button:hover, .home-btn:hover { background-color: #1e88e5; }
+.home-btn { background-color: #78909c; }
+.home-btn:hover { background-color: #546e7a; }
+
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 100;
+}
+.modal-content { background: white; padding: 30px 40px; border-radius: 15px; text-align: center; animation: modal-pop 0.3s ease-out; }
+@keyframes modal-pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+#modal-close-button { margin-top: 20px; padding: 10px 20px; font-size: 1em; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background-color: #42a5f5; color: white; }
+.hidden { display: none; }
+
+@media (max-width: 768px) {
+    .race-wrapper { grid-template-columns: 1.5fr 4fr 1.5fr; gap: 10px; }
+    .horse, .prize { flex-direction: column; text-align: center; }
+    .horse-icon-img, .horse-icon-emoji { margin-right: 0; margin-bottom: 4px; }
+}
+
+#full-reset-button {
+    padding: clamp(10px, 2vh, 14px) clamp(20px, 3vw, 30px);
+    font-size: clamp(1rem, 2.5vh, 1.2rem);
+    font-weight: bold; border: none; border-radius: 8px; cursor: pointer;
+    background-color: #ff7043; color: white; transition: background-color 0.2s; text-decoration: none;
+}
+#full-reset-button:hover { background-color: #f4511e; }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <h1>🏇 경주마를 선택하세요! 🎁</h1>
+
+  <div class="race-wrapper">
+    <div id="start-lane" class="lane"></div>
+    <div class="race-track">
+      <svg id="path-svg"></svg>
+    </div>
+    <div id="finish-lane" class="lane"></div>
+  </div>
+
+  <div class="controls">
+    <button id="reset-button" class="hidden">다시하기</button>
+    <button id="full-reset-button" class="hidden">초기화</button>
+    <a href="index.html" class="home-btn">메인으로</a>
+  </div>
+</div>
+
+<div id="result-modal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <h2 id="modal-title">🎉 축하합니다! 🎉</h2>
+    <p id="modal-text"></p>
+    <button id="modal-close-button">확인</button>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const startLane = document.getElementById('start-lane');
+    const finishLane = document.getElementById('finish-lane');
+    const raceTrack = document.querySelector('.race-track');
+    const pathSvg = document.getElementById('path-svg');
+    const resultModal = document.getElementById('result-modal');
+    const modalText = document.getElementById('modal-text');
+    const modalCloseButton = document.getElementById('modal-close-button');
+
+    const resetButton = document.getElementById('reset-button');
+    const fullResetButton = document.getElementById('full-reset-button');
+
+    modalCloseButton.addEventListener('click', () => resultModal.classList.add('hidden'));
+
+    resetButton.addEventListener('click', () => {
+        resultModal.classList.add('hidden');
+        resetRaceLayout();
+    });
+
+    fullResetButton.addEventListener('click', () => {
+        resultModal.classList.add('hidden');
+        fullResetGame();
+    });
+
+    const SPRITE_FRAMES = 8;
+    const FRAME_WIDTH = 80;
+    const FRAME_HEIGHT = 80;
+    const RACE_DURATION = 6;
+
+    // ▼ 경주마 목록 — name만 바꿔도 됩니다. (아이콘/스프라이트 이미지 파일은 없어서 이모지로 대체됩니다)
+    const horseData = [
+        { name: '천리마', iconImage: 'horse_천리마_icon.png', sprite: 'horse_천리마.png' },
+        { name: '적토마', iconImage: 'horse_적토마_icon.png', sprite: 'horse_적토마.png' },
+        { name: '백마',   iconImage: 'horse_백마_icon.png',   sprite: 'horse_백마.png' },
+        { name: '흑마',   iconImage: 'horse_흑마_icon.png',   sprite: 'horse_흑마.png' },
+        { name: '조랑말', iconImage: 'horse_조랑말_icon.png', sprite: 'horse_조랑말.png' },
+    ];
+
+    // ▼ 경품 목록 — name(경품명)과 initialCount(수량)만 바꾸면 됩니다.
+    let prizeData = [
+        { name: '50% 할인권', initialCount: 1,  currentCount: 1 },
+        { name: '30% 할인권', initialCount: 3,  currentCount: 3 },
+        { name: '에코백',     initialCount: 51, currentCount: 51 },
+        { name: '큐브메모함', initialCount: 49, currentCount: 49 },
+        { name: '꽝',         initialCount: 16, currentCount: 16 }
+    ];
+
+    let gameInProgress = false;
+
+    function resetRaceLayout() {
+        gameInProgress = false;
+        startLane.innerHTML = '';
+        finishLane.innerHTML = '';
+        pathSvg.innerHTML = '';
+
+        raceTrack.querySelectorAll('.horse-runner, .track-point').forEach(el => el.remove());
+
+        resetButton.classList.add('hidden');
+        fullResetButton.classList.add('hidden');
+
+        horseData.forEach((horse, index) => {
+            const horseEl = document.createElement('div');
+            horseEl.className = 'horse';
+            horseEl.dataset.index = index;
+            horseEl.innerHTML = `<div class="horse-icon-emoji">🐎</div><span>${horse.name}</span>`;
+            horseEl.addEventListener('click', startRace);
+            startLane.appendChild(horseEl);
+        });
+
+        prizeData.forEach(prize => {
+            const prizeEl = document.createElement('div');
+            prizeEl.className = 'prize';
+            prizeEl.innerHTML = `<span>🎁 ${prize.name}</span>`;
+            finishLane.appendChild(prizeEl);
+        });
+
+        setTimeout(createTrackPoints, 0);
+    }
+
+    function fullResetGame() {
+        prizeData.forEach(prize => { prize.currentCount = prize.initialCount; });
+        resetRaceLayout();
+    }
+
+    function createTrackPoints() {
+        const trackRect = raceTrack.getBoundingClientRect();
+        const trackWidth = raceTrack.clientWidth;
+        const horizontalOffset = 30;
+
+        const horseElements = startLane.querySelectorAll('.horse');
+        horseElements.forEach((horseEl, i) => {
+            const horseRect = horseEl.getBoundingClientRect();
+            const yPos = (horseRect.top - trackRect.top) + (horseRect.height / 2);
+            const startPoint = document.createElement('div');
+            startPoint.className = 'track-point start-point';
+            startPoint.style.left = `${horizontalOffset}px`;
+            startPoint.style.top = `${yPos}px`;
+            startPoint.dataset.index = i;
+            raceTrack.appendChild(startPoint);
+        });
+
+        const prizeElements = finishLane.querySelectorAll('.prize');
+        prizeElements.forEach((prizeEl, i) => {
+            const prizeRect = prizeEl.getBoundingClientRect();
+            const yPos = (prizeRect.top - trackRect.top) + (prizeRect.height / 2);
+            const endPoint = document.createElement('div');
+            endPoint.className = 'track-point end-point';
+            endPoint.style.left = `${trackWidth - horizontalOffset}px`;
+            endPoint.style.top = `${yPos}px`;
+            endPoint.dataset.index = i;
+            raceTrack.appendChild(endPoint);
+        });
+    }
+
+    function determinePrize() {
+        const availablePrizes = prizeData.filter(prize => prize.currentCount > 0);
+        if (availablePrizes.length === 0) return -1;
+
+        const totalAvailableCount = availablePrizes.reduce((sum, prize) => sum + prize.currentCount, 0);
+        let randomNum = Math.random() * totalAvailableCount;
+
+        for (let i = 0; i < availablePrizes.length; i++) {
+            if (randomNum < availablePrizes[i].currentCount) {
+                availablePrizes[i].currentCount--;
+                return prizeData.findIndex(p => p.name === availablePrizes[i].name);
+            }
+            randomNum -= availablePrizes[i].currentCount;
+        }
+
+        const lastPrizeIndex = prizeData.findIndex(p => p.name === availablePrizes[availablePrizes.length - 1].name);
+        if (lastPrizeIndex !== -1) prizeData[lastPrizeIndex].currentCount--;
+        return lastPrizeIndex;
+    }
+
+    function startRace(event) {
+        if (gameInProgress) return;
+        gameInProgress = true;
+
+        document.querySelectorAll('.horse').forEach(h => h.classList.add('disabled'));
+
+        const selectedHorseIndex = parseInt(event.currentTarget.dataset.index, 10);
+        const destinationPrizeIndex = determinePrize();
+        const selectedHorseData = horseData[selectedHorseIndex];
+
+        const startPoint = raceTrack.querySelector(`.start-point[data-index='${selectedHorseIndex}']`);
+        const endPoint = raceTrack.querySelector(`.end-point[data-index='${destinationPrizeIndex}']`);
+
+        const path = createPath(startPoint, endPoint);
+        pathSvg.appendChild(path);
+
+        const runner = document.createElement('div');
+        runner.className = 'horse-runner';
+
+        const horseImg = new Image();
+        horseImg.src = selectedHorseData.sprite;
+
+        horseImg.onload = () => {
+            runner.style.backgroundImage = `url(${selectedHorseData.sprite})`;
+            runner.style.animation = `run-on-path ${RACE_DURATION}s ease-in-out forwards, run-sprite 0.8s steps(${SPRITE_FRAMES}) infinite`;
+        };
+        horseImg.onerror = () => {
+            runner.textContent = '🐎';
+            runner.style.fontSize = '2.5rem';
+            runner.style.display = 'flex';
+            runner.style.justifyContent = 'center';
+            runner.style.alignItems = 'center';
+            runner.style.animation = `run-on-path ${RACE_DURATION}s ease-in-out forwards`;
+        };
+
+        runner.style.width = `${FRAME_WIDTH}px`;
+        runner.style.height = `${FRAME_HEIGHT}px`;
+        runner.style.visibility = 'visible';
+        runner.style.offsetPath = `path('${path.getAttribute('d')}')`;
+        raceTrack.appendChild(runner);
+
+        setTimeout(() => {
+            if (runner) runner.style.animationPlayState = 'paused';
+            const prizeName = destinationPrizeIndex !== -1 ? prizeData[destinationPrizeIndex].name : undefined;
+            showResult(prizeName);
+        }, RACE_DURATION * 1000);
+    }
+
+    function createPath(startPointEl, endPointEl) {
+        const trackRect = raceTrack.getBoundingClientRect();
+        const startRect = startPointEl.getBoundingClientRect();
+        const endRect = endPointEl.getBoundingClientRect();
+
+        const startX = startRect.left - trackRect.left + startRect.width / 2;
+        const startY = startRect.top - trackRect.top + startRect.height / 2;
+        const endX = endRect.left - trackRect.left + endRect.width / 2;
+        const endY = endRect.top - trackRect.top + endRect.height / 2;
+
+        const midX1 = startX + (endX - startX) * 0.25;
+        const midX2 = startX + (endX - startX) * 0.75;
+        const midY1 = startY + (endY - startY) * (0.3 + Math.random() * 0.4);
+
+        const pathD = `M ${startX},${startY} C ${midX1},${startY} ${midX1},${midY1} ${(startX + endX)/2},${midY1} S ${midX2},${endY} ${endX},${endY}`;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathD);
+        return path;
+    }
+
+    function showResult(prizeName) {
+        if (prizeName === undefined) {
+            modalText.textContent = `아쉽게도 모든 경품이 소진되었습니다. 다음에 다시 시도해주세요!`;
+        } else {
+            modalText.textContent = `🎉 축하합니다! [${prizeName}]을(를) 획득하셨습니다!`;
+        }
+        resultModal.classList.remove('hidden');
+        resetButton.classList.remove('hidden');
+        fullResetButton.classList.remove('hidden');
+    }
+
+    fullResetGame();
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>캐치마인드 · 테크커넥트 게임 이벤트</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  #drawCanvas{
+    width:100%;
+    max-width: 560px;
+    aspect-ratio: 4/3;
+    background: #F3F1EC;
+    border-radius: 12px;
+    display:block;
+    margin: 0 auto;
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .tools{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    justify-content:center;
+    margin-top:16px;
+  }
+  .swatch{
+    width:28px; height:28px; border-radius:50%;
+    border: 2px solid var(--line);
+    cursor:pointer;
+  }
+  .swatch.active{ border-color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="mark">TC</span> 테크커넥트</div>
+  <a class="back" href="index.html">← 게임 목록</a>
+</header>
+
+<main class="game-shell">
+  <div class="game-head">
+    <h1>🎨 캐치마인드</h1>
+    <p>한 사람이 제시어를 보고 그림을 그리면, 나머지가 맞혀보세요.</p>
+  </div>
+
+  <div class="game-board">
+    <div class="hud">
+      <div class="stat">제시어 <b id="wordBox">? ? ?</b></div>
+      <div class="stat">남은 시간 <b id="timer">60</b>초</div>
+    </div>
+
+    <div style="text-align:center; margin-bottom:14px;">
+      <button class="btn btn-primary" onclick="newRound()">새 제시어 뽑기</button>
+      <button class="btn btn-ghost" onclick="revealWord()">제시어 보기</button>
+    </div>
+
+    <canvas id="drawCanvas" width="560" height="420"></canvas>
+
+    <div class="tools">
+      <span class="swatch active" style="background:#0F1226" data-color="#0F1226" onclick="setColor(this)"></span>
+      <span class="swatch" style="background:#FF6B5B" data-color="#FF6B5B" onclick="setColor(this)"></span>
+      <span class="swatch" style="background:#FFB648" data-color="#FFB648" onclick="setColor(this)"></span>
+      <span class="swatch" style="background:#57E0D8" data-color="#57E0D8" onclick="setColor(this)"></span>
+      <span class="swatch" style="background:#3A6DF0" data-color="#3A6DF0" onclick="setColor(this)"></span>
+      <input type="range" min="2" max="20" value="5" id="brushSize" oninput="setSize(this.value)">
+      <button class="btn btn-ghost" onclick="clearCanvas()">전체 지우기</button>
+    </div>
+
+    <div id="toast" class="toast info">
+      ⏰ 시간 종료! 정답을 공개해보세요.
+      <div style="margin-top:12px;">
+        <button class="btn btn-primary" onclick="newRound()">다음 라운드</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">COPYRIGHT (c) TEConnect Inc. ALL RIGHTS RESERVED.</footer>
+
+<script>
+const WORDS = ['코끼리','피자','전자칠판','우산','축구공','로봇','무지개','자전거','고양이','비행기','선풍기','아이스크림','기린','카메라','스마트폰','수박','토끼','드론','버섯','안경'];
+
+const canvas = document.getElementById('drawCanvas');
+const ctx = canvas.getContext('2d');
+let drawing = false, color = '#0F1226', size = 5, currentWord = '', seconds = 60, timerId, revealed = false;
+
+function resizeCanvasBuffer(){
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+}
+window.addEventListener('resize', ()=>{ clearCanvas(); });
+
+function pos(e){
+  const rect = canvas.getBoundingClientRect();
+  const p = e.touches ? e.touches[0] : e;
+  return { x: p.clientX - rect.left, y: p.clientY - rect.top };
+}
+
+function start(e){ drawing = true; draw(e); }
+function end(){ drawing = false; ctx.beginPath(); }
+function draw(e){
+  if(!drawing) return;
+  e.preventDefault();
+  const {x,y} = pos(e);
+  ctx.lineWidth = size;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = color;
+  ctx.lineTo(x,y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+}
+
+canvas.addEventListener('mousedown', start);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', end);
+canvas.addEventListener('mouseleave', end);
+canvas.addEventListener('touchstart', start);
+canvas.addEventListener('touchmove', draw);
+canvas.addEventListener('touchend', end);
+
+function setColor(el){
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  color = el.dataset.color;
+}
+function setSize(v){ size = Number(v); }
+function clearCanvas(){
+  resizeCanvasBuffer();
+  ctx.fillStyle = '#F3F1EC';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+
+function pickWord(){
+  return WORDS[Math.floor(Math.random()*WORDS.length)];
+}
+
+function revealWord(){
+  revealed = true;
+  document.getElementById('wordBox').textContent = currentWord;
+}
+
+function tick(){
+  seconds--;
+  document.getElementById('timer').textContent = seconds;
+  if(seconds<=0){
+    clearInterval(timerId);
+    document.getElementById('toast').classList.add('show');
+  }
+}
+
+function newRound(){
+  currentWord = pickWord();
+  revealed = false;
+  document.getElementById('wordBox').textContent = '? ? ?';
+  seconds = 60;
+  document.getElementById('timer').textContent = seconds;
+  document.getElementById('toast').classList.remove('show');
+  clearCanvas();
+  clearInterval(timerId);
+  timerId = setInterval(tick, 1000);
+}
+
+newRound();
+</script>
+
+</body>
+</html>

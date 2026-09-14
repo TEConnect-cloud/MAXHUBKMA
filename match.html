@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전자칠판 용어 짝 맞추기 · 테크커넥트 게임 이벤트</title>
+<link rel="stylesheet" href="style.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+
+* { box-sizing: border-box; }
+
+html, body {
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f0f4f8;
+    color: #333;
+    padding: 10px;
+    margin:0;
+    min-height:100vh;
+}
+
+.game-container {
+    width: 100%;
+    max-width: 800px;
+    padding: clamp(10px, 2vw, 20px);
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.game-container h1 { margin: 0; color: #2c3e50; flex-shrink: 0; font-size: clamp(1.3em, 4vw, 1.8em); }
+.game-info-panel { margin: 0; flex-shrink: 0; }
+.game-controls { margin: 0; flex-shrink: 0; }
+
+.timer-bar { width: 100%; height: 20px; background-color: #e0e0e0; border-radius: 10px; overflow: hidden; }
+.timer-progress { width: 100%; height: 100%; background: linear-gradient(90deg, #6abcea, #43e97b, #ffdd57, #ff5151); border-radius: 8px; transition: width 1s linear; }
+.match-counter { margin-top: 8px; font-size: 1.2em; color: #555; }
+
+.game-controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.level-controls { display: flex; gap: 8px; }
+.action-controls { display: flex; gap: 8px; position: relative; z-index: 101; }
+
+.level-btn, .action-controls button, .home-btn { padding: 8px 16px; border: 2px solid #ddd; background-color: #f8f8f8; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s ease; text-decoration: none; color: #333; font-size: 1em; }
+.level-btn:hover, .action-controls button:hover, .home-btn:hover { border-color: #66a6ff; color: #66a6ff; }
+.level-btn.active { background-color: #66a6ff; color: white; border-color: #66a6ff; }
+#pauseButton { background-color: #ffc107; border-color: #ffc107; color: white; }
+#mainRestartButton { background-color: #28a745; border-color: #28a745; color: white; }
+.home-btn { background-color: #6c757d; border-color: #6c757d; color: white; }
+
+.memory-game {
+    display: grid;
+    gap: 10px;
+    perspective: 1000px;
+    min-height: 320px;
+    height: 60vh;
+    max-height: 520px;
+}
+
+.memory-card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+    cursor: pointer;
+    border-radius: 10px;
+}
+
+.memory-card.flip { transform: rotateY(180deg); }
+
+.front-face, .back-face {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    backface-visibility: hidden;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+    word-break: keep-all;
+    line-height: 1.2;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.front-face {
+    background: #fff;
+    transform: rotateY(180deg);
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: clamp(10px, 2vmin, 18px);
+    font-weight: 500;
+    color: #1a237e;
+}
+
+.back-face {
+    background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+    color: white;
+    font-size: clamp(1.5em, 5vmin, 3em);
+}
+.back-face::before { content: '?'; }
+
+.memory-card.matched {
+    transform: rotateY(180deg);
+    animation: match-animation 0.5s;
+    cursor: default;
+}
+
+@keyframes match-animation {
+    0% { transform: rotateY(180deg) scale(1); }
+    50% { transform: rotateY(180deg) scale(1.1); }
+    100% { transform: rotateY(180deg) scale(1); }
+}
+
+.game-over-modal, .pause-overlay {
+    display: none;
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    border-radius: 20px;
+}
+
+.pause-text { font-size: 32px; color: white; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+
+.modal-content {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    animation: fadeIn 0.3s ease-out;
+    position: relative;
+    z-index: 101;
+}
+
+#modalDetail { margin-top: 10px; color: #555; font-size: 1.2em; }
+#modalRestartButton { margin-top: 20px; padding: 12px 25px; font-size: 18px; font-weight: bold; color: white; background-color: #66a6ff; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s; }
+#modalRestartButton:hover { background-color: #4f8bda; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 520px) {
+    .game-controls { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <h1>전자칠판 용어 짝 맞추기</h1>
+
+  <div class="game-info-panel">
+    <div class="timer-bar"><div class="timer-progress"></div></div>
+    <div class="match-counter">맞춘 짝: <span id="matchedPairs">0</span> / <span id="totalPairs">6</span></div>
+  </div>
+
+  <div class="game-controls">
+    <div class="level-controls">
+      <button class="level-btn active" data-size="4x3">초급</button>
+      <button class="level-btn" data-size="4x4">중급</button>
+      <button class="level-btn" data-size="5x4">고급</button>
+    </div>
+    <div class="action-controls">
+      <button id="showRankingBtn">랭킹 보기</button>
+      <button id="pauseButton">멈추기</button>
+      <button id="mainRestartButton">다시하기</button>
+      <a href="index.html" class="home-btn">메인으로</a>
+    </div>
+  </div>
+
+  <div class="memory-game"></div>
+
+  <div class="pause-overlay" id="pauseOverlay">
+    <div class="pause-text">⏸ 일시정지 중</div>
+  </div>
+
+  <div class="game-over-modal" id="gameOverModal">
+    <div class="modal-content">
+      <h2 id="modalMessage"></h2>
+      <p id="modalDetail"></p>
+      <button id="modalRestartButton">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script src="ranking.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const gameBoard = document.querySelector('.memory-game');
+    const timerProgress = document.querySelector('.timer-progress');
+    const gameOverModal = document.getElementById('gameOverModal');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalDetail = document.getElementById('modalDetail');
+    const modalRestartButton = document.getElementById('modalRestartButton');
+    const mainRestartButton = document.getElementById('mainRestartButton');
+    const pauseButton = document.getElementById('pauseButton');
+    const pauseOverlay = document.getElementById('pauseOverlay');
+    const levelButtons = document.querySelectorAll('.level-btn');
+    const matchedPairsDisplay = document.getElementById('matchedPairs');
+    const totalPairsDisplay = document.getElementById('totalPairs');
+    const showRankingBtn = document.getElementById('showRankingBtn');
+
+    const GAME_ID = 'match';
+
+    // ▼ 카드 목록 — '테크커넥트'는 매 판 항상 등장하는 고정 단어이고,
+    //    나머지는 아래 목록에서 무작위로 뽑힙니다. 자유롭게 추가/삭제/수정하세요.
+    const ourCompany = '테크커넥트';
+    const companyList = [
+        '터치스크린', '디스플레이', '백라이트', '내장 컴퓨터 슬롯', '안드로이드 운영체제',
+        '카메라', '마이크', '스피커', '전자펜', 'USB 단자',
+        'HDMI 단자', '타입-C 단자', '디스플레이포트', '저장장치', '무선인터넷',
+        '블루투스', '근거리 무선 통신', '리모컨', '전면 조작 버튼', '판서 프로그램',
+        '화면 캡처', '파일 저장', '화면 공유', '무선 화면 미러링', '다중 터치 기능',
+        '화면 분할', '여러 앱 동시 실행', '화상회의 프로그램', '원격 제어 기능', '학습관리시스템 연동',
+        '실시간 판서', '메모', '지우기', '스크린샷 저장', 'QR 코드 공유',
+        '동영상 재생', '문서 열기', '화면 잠금', '보안 설정', '양방향 제어',
+        '음성 인식 기능', '스피커폰', '무선 연결 동글', '이동형 받침대', '벽걸이 거치대',
+        '모듈형 카메라', '모듈형 컴퓨터', '무선 키보드', '무선 마우스', '회의실',
+        '원격회의', '협업 공간', '스마트교실', '원격 수업', '교육기관',
+        '기업 연수', '공공기관 발표', '재난대응 브리핑', '병동 회의', '공장 교육',
+        '전자칠판', '전자 화이트보드', '일체형 디스플레이', '운영체제 인증', '판서 기능',
+        '터치 정확도', '반응 속도', '패널 수명', '맥스허브'
+    ];
+
+    const gameConfigs = {
+        '4x3': { rows: 3, cols: 4, time: 60, name: '초급' },
+        '4x4': { rows: 4, cols: 4, time: 90, name: '중급' },
+        '5x4': { rows: 4, cols: 5, time: 180, name: '고급' },
+    };
+
+    let currentLevelId = '4x3';
+    let currentConfig = gameConfigs[currentLevelId];
+
+    let cards = [];
+    let firstCard = null, secondCard = null;
+    let lockBoard = false;
+    let matchedPairs = 0;
+    let timer;
+    let timeLeft;
+    let timeElapsed = 0;
+    let isPaused = false;
+
+    function startGame() {
+        isPaused = false;
+        lockBoard = false;
+        matchedPairs = 0;
+        firstCard = null;
+        secondCard = null;
+        timeElapsed = 0;
+        timeLeft = currentConfig.time;
+
+        pauseButton.textContent = '멈추기';
+        gameOverModal.style.display = 'none';
+        pauseOverlay.style.display = 'none';
+        updateMatchCounter();
+
+        setupBoard();
+        createCards();
+        shuffleCards();
+        addCardsToBoard();
+
+        startTimer();
+    }
+
+    function setupBoard() {
+        gameBoard.style.gridTemplateColumns = `repeat(${currentConfig.cols}, 1fr)`;
+        gameBoard.style.gridTemplateRows = `repeat(${currentConfig.rows}, 1fr)`;
+    }
+
+    function createCards() {
+        const pairCount = (currentConfig.rows * currentConfig.cols) / 2;
+        const otherCompanies = companyList.filter(c => c !== ourCompany);
+        otherCompanies.sort(() => 0.5 - Math.random());
+        const neededOtherCompanyCount = pairCount - 1;
+        const selectedOtherCompanies = otherCompanies.slice(0, neededOtherCompanyCount);
+        const finalUniqueItems = [ourCompany, ...selectedOtherCompanies];
+        const cardSet = [...finalUniqueItems, ...finalUniqueItems];
+
+        cards = cardSet.map(item => {
+            const card = document.createElement('div');
+            card.classList.add('memory-card');
+            card.dataset.item = item;
+            card.innerHTML = `<div class="front-face">${item}</div><div class="back-face"></div>`;
+            card.addEventListener('click', flipCard);
+            return card;
+        });
+    }
+
+    function shuffleCards() {
+        cards.forEach(card => {
+            card.style.order = Math.floor(Math.random() * cards.length);
+        });
+    }
+
+    function addCardsToBoard() {
+        gameBoard.innerHTML = '';
+        cards.forEach(card => gameBoard.appendChild(card));
+    }
+
+    function flipCard() {
+        if (lockBoard || isPaused || this === firstCard) return;
+        this.classList.add('flip');
+        if (!firstCard) {
+            firstCard = this;
+            return;
+        }
+        secondCard = this;
+        lockBoard = true;
+        checkForMatch();
+    }
+
+    function checkForMatch() {
+        const isMatch = firstCard.dataset.item === secondCard.dataset.item;
+        isMatch ? disableCards() : unflipCards();
+    }
+
+    function disableCards() {
+        firstCard.removeEventListener('click', flipCard);
+        secondCard.removeEventListener('click', flipCard);
+        firstCard.classList.add('matched');
+        secondCard.classList.add('matched');
+
+        matchedPairs++;
+        updateMatchCounter();
+        resetBoard();
+
+        if (matchedPairs === (currentConfig.rows * currentConfig.cols) / 2) {
+            clearInterval(timer);
+            showEndGameMessage(true);
+        }
+    }
+
+    function unflipCards() {
+        setTimeout(() => {
+            firstCard.classList.remove('flip');
+            secondCard.classList.remove('flip');
+            resetBoard();
+        }, 1000);
+    }
+
+    function resetBoard() {
+        [firstCard, secondCard, lockBoard] = [null, null, false];
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        timeElapsed = 0;
+
+        timerProgress.style.transition = 'none';
+        timerProgress.style.width = '100%';
+
+        setTimeout(() => {
+            timerProgress.style.transition = `width 1s linear`;
+        }, 100);
+
+        timer = setInterval(() => {
+            if (!isPaused) {
+                timeLeft--;
+                timeElapsed++;
+                const widthPercent = (timeLeft / currentConfig.time) * 100;
+                timerProgress.style.width = `${widthPercent}%`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    lockBoard = true;
+                    showEndGameMessage(false);
+                }
+            }
+        }, 1000);
+    }
+
+    function togglePause() {
+        isPaused = !isPaused;
+        pauseButton.textContent = isPaused ? '계속하기' : '멈추기';
+        pauseOverlay.style.display = isPaused ? 'flex' : 'none';
+    }
+
+    function updateMatchCounter() {
+        matchedPairsDisplay.textContent = matchedPairs;
+        totalPairsDisplay.textContent = (currentConfig.rows * currentConfig.cols) / 2;
+    }
+
+    function showEndGameMessage(isSuccess) {
+        clearInterval(timer);
+        setTimeout(() => {
+            if (isSuccess) {
+                const minutes = Math.floor(timeElapsed / 60);
+                const seconds = timeElapsed % 60;
+                modalMessage.textContent = '🎉 축하합니다! 성공! 🎉';
+                modalDetail.textContent = `걸린 시간: ${minutes > 0 ? `${minutes}분 ` : ''}${seconds}초`;
+
+                const storageKey = `${GAME_ID}_${currentLevelId}`;
+                Ranking.promptNameAndSave(storageKey, `전자칠판 용어 짝 맞추기 (${currentConfig.name})`, timeElapsed, `${minutes > 0 ? `${minutes}분 ` : ''}${seconds}초`, 'asc');
+
+            } else {
+                modalMessage.textContent = '😭 아쉽네요, 시간 초과! 😭';
+                modalDetail.textContent = '다시 도전해보세요!';
+            }
+            gameOverModal.style.display = 'flex';
+        }, 500);
+    }
+
+    levelButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            levelButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            currentLevelId = button.dataset.size;
+            currentConfig = gameConfigs[currentLevelId];
+
+            startGame();
+        });
+    });
+
+    showRankingBtn.addEventListener('click', () => {
+        const storageKey = `${GAME_ID}_${currentLevelId}`;
+        Ranking.showModal(storageKey, `전자칠판 용어 짝 맞추기 (${currentConfig.name})`);
+    });
+
+    pauseButton.addEventListener('click', togglePause);
+    mainRestartButton.addEventListener('click', startGame);
+    modalRestartButton.addEventListener('click', startGame);
+
+    startGame();
+});
+</script>
+
+</body>
+</html>

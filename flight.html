@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>비행선 게임 · 테크커넥트 게임 이벤트</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="mark">TC</span> 테크커넥트</div>
+  <a class="back" href="index.html">← 게임 목록</a>
+</header>
+
+<main class="game-shell">
+  <div class="game-head">
+    <h1>🚀 비행선 게임</h1>
+    <p>위/아래로 이동해 장애물을 피하고, 스페이스바(또는 발사 버튼)로 파괴하세요.</p>
+  </div>
+
+  <div class="game-board">
+    <div class="hud">
+      <div class="stat">점수 <b id="score">0</b></div>
+      <div class="stat">최고 기록 <b id="best">0</b></div>
+      <div class="stat">생명 <b id="lives">3</b></div>
+    </div>
+
+    <canvas id="game" width="640" height="380" style="width:100%; max-width:600px; display:block; margin:0 auto; border-radius:12px; background:linear-gradient(180deg, #0B0E20, #171B34);"></canvas>
+
+    <div style="text-align:center; margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+      <button class="btn btn-ghost" onmousedown="setDir(-1)" onmouseup="setDir(0)" ontouchstart="setDir(-1)" ontouchend="setDir(0)">▲ 위로</button>
+      <button class="btn btn-primary" onclick="shoot()">🔥 발사</button>
+      <button class="btn btn-ghost" onmousedown="setDir(1)" onmouseup="setDir(0)" ontouchstart="setDir(1)" ontouchend="setDir(0)">▼ 아래로</button>
+    </div>
+
+    <div id="toast" class="toast info">
+      💥 게임 오버! <span id="resultText"></span>
+      <div style="margin-top:12px;">
+        <button class="btn btn-primary" onclick="startGame()">다시 시작</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">COPYRIGHT (c) TEConnect Inc. ALL RIGHTS RESERVED.</footer>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let W, H, ship, obstacles, bullets, score, best = 0, lives, dir = 0, running = false, frame = 0;
+
+function resize(){
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  W = canvas.width; H = canvas.height;
+}
+window.addEventListener('resize', resize);
+
+function setDir(d){ dir = d; }
+
+function shoot(){
+  if(!running) return;
+  bullets.push({x: ship.x+24, y: ship.y, r:4});
+}
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='ArrowUp') dir = -1;
+  if(e.key==='ArrowDown') dir = 1;
+  if(e.code==='Space') shoot();
+});
+document.addEventListener('keyup', (e)=>{
+  if(e.key==='ArrowUp' || e.key==='ArrowDown') dir = 0;
+});
+
+function spawnObstacle(){
+  const r = 16 + Math.random()*14;
+  obstacles.push({
+    x: W + r,
+    y: Math.random()*(H-2*r)+r,
+    r,
+    vx: 2 + Math.random()*2 + score*0.01
+  });
+}
+
+function drawShip(){
+  ctx.save();
+  ctx.translate(ship.x, ship.y);
+  ctx.fillStyle = '#57E0D8';
+  ctx.beginPath();
+  ctx.moveTo(24, 0);
+  ctx.lineTo(-16, -14);
+  ctx.lineTo(-8, 0);
+  ctx.lineTo(-16, 14);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function loop(){
+  if(!running) return;
+  frame++;
+  ctx.clearRect(0,0,W,H);
+
+  // stars
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  for(let i=0;i<24;i++){
+    const sx = (i*53 + frame*1.2) % W;
+    const sy = (i*97) % H;
+    ctx.fillRect(sx, sy, 2, 2);
+  }
+
+  ship.y += dir*4;
+  ship.y = Math.max(18, Math.min(H-18, ship.y));
+  drawShip();
+
+  if(frame % Math.max(20, 60-Math.floor(score/5)) === 0) spawnObstacle();
+
+  ctx.fillStyle = '#FF6B5B';
+  obstacles.forEach(o=>{
+    o.x -= o.vx;
+    ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2); ctx.fill();
+  });
+  obstacles = obstacles.filter(o=>o.x > -30);
+
+  ctx.fillStyle = '#FFB648';
+  bullets.forEach(b=>{
+    b.x += 8;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+  });
+  bullets = bullets.filter(b=>b.x < W+20);
+
+  // bullet-obstacle collisions
+  for(let i=obstacles.length-1;i>=0;i--){
+    const o = obstacles[i];
+    for(let j=bullets.length-1;j>=0;j--){
+      const b = bullets[j];
+      if(Math.hypot(o.x-b.x, o.y-b.y) < o.r+b.r){
+        obstacles.splice(i,1);
+        bullets.splice(j,1);
+        score += 10;
+        document.getElementById('score').textContent = score;
+        break;
+      }
+    }
+  }
+
+  // ship-obstacle collisions
+  for(let i=obstacles.length-1;i>=0;i--){
+    const o = obstacles[i];
+    if(Math.hypot(o.x-ship.x, o.y-ship.y) < o.r+14){
+      obstacles.splice(i,1);
+      lives--;
+      document.getElementById('lives').textContent = lives;
+      if(lives<=0){ gameOver(); return; }
+    }
+  }
+
+  score += 0; // score only from destroying; survival tracked separately
+  if(frame % 30 === 0){ score += 1; document.getElementById('score').textContent = score; }
+
+  requestAnimationFrame(loop);
+}
+
+function gameOver(){
+  running = false;
+  best = Math.max(best, score);
+  document.getElementById('best').textContent = best;
+  document.getElementById('resultText').textContent = `최종 점수 ${score}점`;
+  document.getElementById('toast').classList.add('show');
+}
+
+function startGame(){
+  resize();
+  ship = { x: 60, y: H/2 };
+  obstacles = []; bullets = []; score = 0; lives = 3; frame = 0; dir = 0;
+  document.getElementById('score').textContent = 0;
+  document.getElementById('lives').textContent = 3;
+  document.getElementById('toast').classList.remove('show');
+  running = true;
+  requestAnimationFrame(loop);
+}
+
+startGame();
+</script>
+
+</body>
+</html>
