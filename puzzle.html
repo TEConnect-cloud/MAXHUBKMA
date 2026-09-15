@@ -19,13 +19,30 @@
     border-radius: 12px;
     overflow: hidden;
   }
-  .tile{
-    background-repeat: no-repeat;
-    cursor:pointer;
-    transition: filter .15s ease;
-  }
+  .tile{ background-repeat: no-repeat; cursor:pointer; transition: filter .15s ease; }
   .tile:hover{ filter: brightness(1.1); }
   .tile.blank{ background: var(--panel-2); cursor:default; }
+
+  .gallery-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .gallery-thumb{
+    position:relative;
+    aspect-ratio:1;
+    border-radius: 8px;
+    overflow:hidden;
+    border: 2px solid var(--line);
+  }
+  .gallery-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .gallery-thumb .del{
+    position:absolute; top:2px; right:2px;
+    width:20px; height:20px; border-radius:50%;
+    background: rgba(0,0,0,0.6); color:#fff; border:none;
+    font-size:0.7rem; cursor:pointer; line-height:20px; padding:0;
+  }
 </style>
 </head>
 <body>
@@ -38,7 +55,7 @@
 <main class="game-shell">
   <div class="game-head">
     <h1>🧩 이미지 퍼즐</h1>
-    <p>조각을 클릭해 빈 칸으로 옮기고, 원래 그림을 완성해보세요.</p>
+    <p>조각을 클릭해 빈 칸으로 옮기고, 그림을 완성해보세요. 매번 등록된 사진 중 하나가 랜덤으로 나와요.</p>
   </div>
 
   <div class="game-board">
@@ -47,23 +64,28 @@
       <div class="stat">경과 시간 <b id="timer">0</b>초</div>
     </div>
 
-    <div style="text-align:center; margin-bottom:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-      <label class="btn btn-primary" style="cursor:pointer;">
-        📷 내 사진으로 퍼즐 만들기
-        <input type="file" id="photoInput" accept="image/*" style="display:none;">
-      </label>
-      <button class="btn btn-ghost" onclick="useDefaultImage()">기본 이미지로 되돌리기</button>
-    </div>
-
     <canvas id="srcCanvas" width="420" height="420" style="display:none;"></canvas>
     <div id="puzzleGrid"></div>
 
     <div id="toast" class="toast win">
       🎉 퍼즐 완성! <span id="resultText"></span>
       <div style="margin-top:12px;">
-        <button class="btn btn-primary" onclick="init()">다시하기</button>
+        <button class="btn btn-primary" onclick="init()">다시하기 (새 사진)</button>
       </div>
     </div>
+
+    <details id="galleryPanel" style="margin-top:28px; text-align:left;">
+      <summary style="cursor:pointer; color:var(--text-dim); font-size:0.88rem;">사진 갤러리 관리 (관리자용) — 미리 여러 장 등록해두세요</summary>
+      <div style="margin-top:14px;">
+        <label class="btn btn-primary" style="cursor:pointer; display:inline-flex;">
+          📷 사진 추가하기 (여러 장 선택 가능)
+          <input type="file" id="galleryInput" accept="image/*" multiple style="display:none;">
+        </label>
+        <button class="btn btn-ghost" onclick="clearGallery()">갤러리 전체 삭제</button>
+        <div style="margin-top:10px; font-size:0.85rem; color:var(--text-dim);">등록된 사진 <b id="galleryCount" style="color:var(--cyan);">0</b>장 (기본 이미지 3종 포함, 총 <span id="poolCount">3</span>종 중 랜덤)</div>
+        <div class="gallery-grid" id="galleryGrid"></div>
+      </div>
+    </details>
   </div>
 </main>
 
@@ -72,18 +94,13 @@
 <script>
 const SIZE = 3;
 let tiles = [], moves = 0, seconds = 0, timerId, imgURL;
-const CUSTOM_IMG_KEY = 'tc_puzzle_custom_image';
+const GALLERY_KEY = 'tc_puzzle_gallery';
 
-function paintSourceImage(){
-  const c = document.getElementById('srcCanvas');
-  const ctx = c.getContext('2d');
+/* ---------- 기본 내장 이미지 3종 ---------- */
+function paintRocket(ctx){
   const g = ctx.createLinearGradient(0,0,420,420);
-  g.addColorStop(0, '#1D2142');
-  g.addColorStop(1, '#0F1226');
-  ctx.fillStyle = g;
-  ctx.fillRect(0,0,420,420);
-
-  // simple rocket illustration
+  g.addColorStop(0, '#1D2142'); g.addColorStop(1, '#0F1226');
+  ctx.fillStyle = g; ctx.fillRect(0,0,420,420);
   ctx.fillStyle = '#57E0D8';
   ctx.beginPath();
   ctx.moveTo(210, 60);
@@ -91,67 +108,135 @@ function paintSourceImage(){
   ctx.lineTo(170, 320);
   ctx.quadraticCurveTo(140, 180, 210, 60);
   ctx.fill();
-
   ctx.fillStyle = '#FFB648';
-  ctx.beginPath();
-  ctx.moveTo(170, 260); ctx.lineTo(120, 340); ctx.lineTo(170, 320); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(250, 260); ctx.lineTo(300, 340); ctx.lineTo(250, 320); ctx.fill();
-
+  ctx.beginPath(); ctx.moveTo(170,260); ctx.lineTo(120,340); ctx.lineTo(170,320); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(250,260); ctx.lineTo(300,340); ctx.lineTo(250,320); ctx.fill();
   ctx.fillStyle = '#FF6B5B';
-  ctx.beginPath();
-  ctx.moveTo(190, 330); ctx.lineTo(210, 380); ctx.lineTo(230, 330); ctx.fill();
-
+  ctx.beginPath(); ctx.moveTo(190,330); ctx.lineTo(210,380); ctx.lineTo(230,330); ctx.fill();
   ctx.fillStyle = '#0F1226';
-  ctx.beginPath();
-  ctx.arc(210, 170, 26, 0, Math.PI*2);
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(210,170,26,0,Math.PI*2); ctx.fill();
   ctx.fillStyle = '#F3F1EC';
-  ctx.beginPath();
-  ctx.arc(210, 170, 16, 0, Math.PI*2);
-  ctx.fill();
-
-  // stars
+  ctx.beginPath(); ctx.arc(210,170,16,0,Math.PI*2); ctx.fill();
   ctx.fillStyle = '#ECEAF8';
   for(const [x,y] of [[60,60],[350,90],[90,340],[340,300],[50,200],[370,220]]){
     ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill();
   }
+}
+function paintBalloons(ctx){
+  const g = ctx.createLinearGradient(0,0,0,420);
+  g.addColorStop(0, '#FBE9CC'); g.addColorStop(1, '#F3A63B');
+  ctx.fillStyle = g; ctx.fillRect(0,0,420,420);
+  const balloons = [[130,150,'#E1523D'],[230,110,'#2E7D6B'],[300,190,'#1B2140'],[170,230,'#F5F1E6']];
+  balloons.forEach(([x,y,color])=>{
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.ellipse(x,y,45,55,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, y+55); ctx.lineTo(x, y+150); ctx.stroke();
+  });
+}
+function paintPattern(ctx){
+  ctx.fillStyle = '#1B2140'; ctx.fillRect(0,0,420,420);
+  const colors = ['#57E0D8','#FFB648','#FF6B5B','#F5F1E6','#2E7D6B'];
+  let i = 0;
+  for(let y=30; y<420; y+=70){
+    for(let x=30; x<420; x+=70){
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.beginPath(); ctx.arc(x,y,22,0,Math.PI*2); ctx.fill();
+      i++;
+    }
+  }
+}
+const BUILTIN_PRESETS = [
+  { name: '로켓', paint: paintRocket },
+  { name: '풍선', paint: paintBalloons },
+  { name: '패턴', paint: paintPattern },
+];
 
-  imgURL = c.toDataURL();
+function loadGallery(){
+  try{ return JSON.parse(localStorage.getItem(GALLERY_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveGallery(list){
+  localStorage.setItem(GALLERY_KEY, JSON.stringify(list));
 }
 
-function drawCoverFit(img){
+function resizeToDataURL(img, maxSize){
+  const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+  const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  c.getContext('2d').drawImage(img, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', 0.82);
+}
+
+document.getElementById('galleryInput').addEventListener('change', (e)=>{
+  const files = Array.from(e.target.files || []);
+  if(!files.length) return;
+  let remaining = files.length;
+  const gallery = loadGallery();
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        gallery.push({ id: Date.now()+Math.random(), dataURL: resizeToDataURL(img, 700) });
+        remaining--;
+        if(remaining === 0){ saveGallery(gallery); renderGalleryPanel(); }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+});
+
+function removeFromGallery(id){
+  const gallery = loadGallery().filter(g => g.id !== id);
+  saveGallery(gallery);
+  renderGalleryPanel();
+}
+function clearGallery(){
+  if(!confirm('갤러리에 등록된 사진을 전부 삭제할까요?')) return;
+  saveGallery([]);
+  renderGalleryPanel();
+}
+function renderGalleryPanel(){
+  const gallery = loadGallery();
+  document.getElementById('galleryCount').textContent = gallery.length;
+  document.getElementById('poolCount').textContent = gallery.length + BUILTIN_PRESETS.length;
+  const grid = document.getElementById('galleryGrid');
+  grid.innerHTML = '';
+  gallery.forEach(g=>{
+    const div = document.createElement('div');
+    div.className = 'gallery-thumb';
+    div.innerHTML = `<img src="${g.dataURL}"><button class="del" onclick="removeFromGallery(${JSON.stringify(g.id)})">×</button>`;
+    grid.appendChild(div);
+  });
+}
+
+function drawCoverFit(ctx, img, size){
+  ctx.clearRect(0,0,size,size);
+  const scale = Math.max(size/img.width, size/img.height);
+  const w = img.width*scale, h = img.height*scale;
+  ctx.drawImage(img, (size-w)/2, (size-h)/2, w, h);
+}
+
+function pickSourceImage(callback){
+  const gallery = loadGallery();
+  const poolSize = gallery.length + BUILTIN_PRESETS.length;
+  const pick = Math.floor(Math.random()*poolSize);
   const c = document.getElementById('srcCanvas');
   const ctx = c.getContext('2d');
-  ctx.clearRect(0,0,420,420);
-  const scale = Math.max(420/img.width, 420/img.height);
-  const w = img.width*scale, h = img.height*scale;
-  const x = (420-w)/2, y = (420-h)/2;
-  ctx.drawImage(img, x, y, w, h);
-  imgURL = c.toDataURL();
-}
 
-function useDefaultImage(){
-  try{ localStorage.removeItem(CUSTOM_IMG_KEY); }catch(e){}
-  paintSourceImage();
-  init(true);
-}
-
-document.getElementById('photoInput').addEventListener('change', (e)=>{
-  const file = e.target.files && e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev)=>{
+  if(pick < gallery.length){
     const img = new Image();
-    img.onload = ()=>{
-      drawCoverFit(img);
-      try{ localStorage.setItem(CUSTOM_IMG_KEY, imgURL); }catch(e){}
-      init(true);
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-});
+    img.onload = ()=>{ drawCoverFit(ctx, img, 420); callback(c.toDataURL()); };
+    img.src = gallery[pick].dataURL;
+  } else {
+    const preset = BUILTIN_PRESETS[pick - gallery.length];
+    preset.paint(ctx);
+    callback(c.toDataURL());
+  }
+}
 
 function shuffleSolvable(){
   let arr;
@@ -164,19 +249,13 @@ function shuffleSolvable(){
   } while(!isSolvable(arr) || isSolved(arr));
   return arr;
 }
-
 function isSolvable(arr){
   const flat = arr.filter(v=>v!==8);
   let inv = 0;
-  for(let i=0;i<flat.length;i++)
-    for(let j=i+1;j<flat.length;j++)
-      if(flat[i]>flat[j]) inv++;
+  for(let i=0;i<flat.length;i++) for(let j=i+1;j<flat.length;j++) if(flat[i]>flat[j]) inv++;
   return inv % 2 === 0;
 }
-
-function isSolved(arr){
-  return arr.every((v,i)=>v===i);
-}
+function isSolved(arr){ return arr.every((v,i)=>v===i); }
 
 function render(){
   const grid = document.getElementById('puzzleGrid');
@@ -184,14 +263,13 @@ function render(){
   const tileSize = 420/SIZE;
   tiles.forEach((val, idx)=>{
     const div = document.createElement('div');
-    if(val === 8){
-      div.className = 'tile blank';
-    } else {
+    if(val === 8){ div.className = 'tile blank'; }
+    else {
       div.className = 'tile';
       const sx = (val % SIZE) * tileSize;
       const sy = Math.floor(val / SIZE) * tileSize;
       div.style.backgroundImage = `url(${imgURL})`;
-      div.style.backgroundSize = `${420}px ${420}px`;
+      div.style.backgroundSize = `420px 420px`;
       div.style.backgroundPosition = `-${sx}px -${sy}px`;
     }
     div.addEventListener('click', ()=>tryMove(idx));
@@ -203,8 +281,7 @@ function tryMove(idx){
   const blankIdx = tiles.indexOf(8);
   const r1 = Math.floor(idx/SIZE), c1 = idx%SIZE;
   const r2 = Math.floor(blankIdx/SIZE), c2 = blankIdx%SIZE;
-  const adjacent = (Math.abs(r1-r2)+Math.abs(c1-c2)) === 1;
-  if(!adjacent) return;
+  if((Math.abs(r1-r2)+Math.abs(c1-c2)) !== 1) return;
   [tiles[idx], tiles[blankIdx]] = [tiles[blankIdx], tiles[idx]];
   moves++;
   document.getElementById('moves').textContent = moves;
@@ -218,23 +295,22 @@ function finish(){
   document.getElementById('toast').classList.add('show');
 }
 
-function init(skipPaint){
-  if(!skipPaint){
-    let custom = null;
-    try{ custom = localStorage.getItem(CUSTOM_IMG_KEY); }catch(e){}
-    if(custom){ imgURL = custom; }
-    else{ paintSourceImage(); }
-  }
-  tiles = shuffleSolvable();
+function init(){
   moves = 0; seconds = 0;
   document.getElementById('moves').textContent = 0;
   document.getElementById('timer').textContent = 0;
   document.getElementById('toast').classList.remove('show');
   clearInterval(timerId);
-  timerId = setInterval(()=>{ seconds++; document.getElementById('timer').textContent = seconds; }, 1000);
-  render();
+
+  pickSourceImage((dataURL)=>{
+    imgURL = dataURL;
+    tiles = shuffleSolvable();
+    timerId = setInterval(()=>{ seconds++; document.getElementById('timer').textContent = seconds; }, 1000);
+    render();
+  });
 }
 
+renderGalleryPanel();
 init();
 </script>
 

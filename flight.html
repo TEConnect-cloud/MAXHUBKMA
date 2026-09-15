@@ -3,186 +3,363 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>비행선 게임 · 테크커넥트 게임 이벤트</title>
-<link rel="stylesheet" href="style.css">
+<title>1분 Meeting Cost Test · 테크커넥트 게임 이벤트</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+:root{
+  --page-bg: #EEF0F4;
+  --card-bg: #FFFFFF;
+  --navy: #1B2140;
+  --amber: #F3A63B;
+  --amber-soft: #FBE9CC;
+  --coral: #E1523D;
+  --teal: #2E7D6B;
+  --ink: #22263B;
+  --ink-dim: #6B7080;
+  --line: #E7E8EE;
+  --font-display: 'Space Grotesk', 'Noto Sans KR', sans-serif;
+  --font-body: 'Noto Sans KR', system-ui, sans-serif;
+}
+*{ box-sizing:border-box; }
+body{
+  margin:0; min-height:100vh;
+  background: var(--page-bg);
+  font-family: var(--font-body);
+  color: var(--ink);
+  display:flex; align-items:flex-start; justify-content:center;
+  padding: 32px 16px;
+}
+.sheet{
+  width:100%; max-width: 760px;
+  background: var(--card-bg);
+  border-radius: 24px;
+  box-shadow: 0 24px 50px rgba(27,33,64,0.10);
+  padding: 36px 40px 40px;
+}
+.topbar-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 22px; }
+.brand{ display:flex; align-items:center; gap:8px; font-family: var(--font-display); font-weight:700; color: var(--navy); }
+.brand .mark{ width:26px; height:26px; border-radius:7px; background:linear-gradient(135deg, var(--amber), var(--coral)); }
+.back-link{ font-size:0.85rem; color: var(--ink-dim); text-decoration:none; border:1px solid var(--line); padding:7px 14px; border-radius:999px; }
+
+.progress-row{ display:flex; gap:6px; margin-bottom: 26px; }
+.progress-dot{ flex:1; height:6px; border-radius:999px; background: var(--line); }
+.progress-dot.done{ background: var(--amber); }
+
+.q-title{ font-family: var(--font-display); font-weight:700; font-size: clamp(1.15rem, 3vw, 1.5rem); text-align:center; margin: 8px 0 26px; line-height:1.5; }
+.q-step{ display:none; }
+.q-step.active{ display:block; }
+
+.opt-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.opt-btn{
+  padding: 22px 14px; border-radius:16px; border: 2px solid var(--line);
+  background: #FAFAFC; font-family: var(--font-body); font-weight:700; font-size: 1.05rem;
+  color: var(--ink); cursor:pointer; transition: all .15s ease;
+}
+.opt-btn:hover{ border-color: var(--amber); background: var(--amber-soft); }
+.opt-btn.selected{ border-color: var(--coral); background: var(--amber-soft); color: var(--coral); }
+
+.nav-row{ display:flex; justify-content:space-between; margin-top: 26px; }
+.nav-btn{ padding: 10px 20px; border-radius:999px; border:1px solid var(--line); background:#fff; font-weight:700; cursor:pointer; color: var(--ink-dim); }
+.nav-btn:disabled{ opacity: 0.3; cursor:default; }
+
+/* ---- intro ---- */
+#introStep{ text-align:center; }
+#introStep h1{ font-family: var(--font-display); font-size: clamp(1.5rem,4vw,2.1rem); color: var(--navy); margin:6px 0 12px; }
+#introStep p{ color: var(--ink-dim); line-height:1.7; margin-bottom: 26px; }
+.start-btn{
+  padding: 16px 38px; border-radius:999px; border:none;
+  background: var(--navy); color:#fff; font-weight:700; font-size:1.05rem; cursor:pointer;
+}
+
+/* ---- loading ---- */
+#loadingStep{ text-align:center; padding: 40px 0; }
+.spinner{
+  width:46px; height:46px; margin:0 auto 18px;
+  border:5px solid var(--line); border-top-color: var(--amber);
+  border-radius:50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+/* ---- result ---- */
+#resultStep .result-lead{ text-align:center; color: var(--ink-dim); font-size:0.92rem; margin-bottom:6px; }
+#resultStep .total-cost{ text-align:center; font-family: var(--font-display); font-weight:700; font-size: clamp(2rem,7vw,2.9rem); color: var(--navy); margin: 4px 0 22px; }
+.cost-cards{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom: 20px; }
+.cost-card{ background: #FAFAFC; border:1px solid var(--line); border-radius:14px; padding:16px; text-align:center; }
+.cost-card .lbl{ font-size:0.82rem; color: var(--ink-dim); margin-bottom:6px; }
+.cost-card .val{ font-family: var(--font-display); font-weight:700; font-size:1.3rem; color: var(--ink); }
+.cost-card.overhead .val{ color: var(--coral); }
+
+.callout{ background: var(--amber-soft); border-radius:14px; padding:16px 20px; text-align:center; font-weight:700; color: var(--navy); margin-bottom:14px; }
+.callout .big{ font-family: var(--font-display); font-size:1.3rem; color: var(--coral); }
+
+.save-callout{ background: #EAF5F0; border-radius:14px; padding:16px 20px; text-align:center; margin-bottom: 26px; }
+.save-callout .lbl{ font-weight:700; color: var(--teal); margin-bottom:4px; }
+.save-callout .val{ font-family: var(--font-display); font-weight:700; font-size:1.2rem; color: var(--teal); }
+
+.calc-detail{
+  background:#FAFAFC; border:1px solid var(--line); border-radius:14px;
+  padding: 14px 18px; margin-bottom: 22px; font-size:0.88rem;
+}
+.calc-detail summary{ cursor:pointer; font-weight:700; color: var(--navy); }
+.calc-body{ margin-top:14px; display:flex; flex-direction:column; gap:12px; }
+.calc-line{ line-height:1.6; color: var(--ink-dim); border-bottom:1px dashed var(--line); padding-bottom:10px; }
+.calc-line b{ color: var(--ink); }
+.calc-line.total{ border-bottom:none; padding-bottom:0; font-size:0.98rem; }
+.calc-line.total b{ color: var(--teal); }
+.calc-line.overhead-line{ border-top: 1px solid var(--line); padding-top: 12px; }
+.calc-line.overhead-line b{ color: var(--coral); }
+
+.pitch-box{
+  background: var(--navy); color:#fff; border-radius:18px; padding: 26px 24px; text-align:center; margin-bottom: 22px;
+}
+.pitch-box .problem{ font-size:0.95rem; opacity:0.85; margin-bottom: 14px; line-height:1.6; }
+.pitch-box .tagline{ font-family: var(--font-display); font-weight:700; font-size:1.15rem; color: var(--amber); margin-bottom:6px; }
+.pitch-box .sub{ font-size:0.85rem; opacity:0.75; }
+
+.result-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+.result-actions .btn{ padding:12px 24px; border-radius:999px; font-weight:700; cursor:pointer; text-decoration:none; }
+.btn-primary{ background: var(--amber); color: var(--navy); border:none; }
+.btn-ghost{ background:#fff; color: var(--ink); border:1px solid var(--line); }
+
+@media (max-width: 480px){
+  .opt-grid{ grid-template-columns: 1fr; }
+  .cost-cards{ grid-template-columns: 1fr; }
+  .sheet{ padding: 26px 20px 30px; }
+}
+</style>
 </head>
 <body>
 
-<header class="topbar">
-  <div class="brand"><span class="mark">TC</span> 테크커넥트</div>
-  <a class="back" href="index.html">← 게임 목록</a>
-</header>
-
-<main class="game-shell">
-  <div class="game-head">
-    <h1>🚀 비행선 게임</h1>
-    <p>위/아래로 이동해 장애물을 피하고, 스페이스바(또는 발사 버튼)로 파괴하세요.</p>
+<div class="sheet">
+  <div class="topbar-row">
+    <div class="brand"><span class="mark"></span>테크커넥트</div>
+    <a class="back-link" href="index.html">← 게임 목록</a>
   </div>
 
-  <div class="game-board">
-    <div class="hud">
-      <div class="stat">점수 <b id="score">0</b></div>
-      <div class="stat">최고 기록 <b id="best">0</b></div>
-      <div class="stat">생명 <b id="lives">3</b></div>
-    </div>
+  <!-- 인트로 -->
+  <div id="introStep">
+    <h1>1분 Meeting Cost Test</h1>
+    <p>우리 회사 회의, 얼마나 비용이 들고 있을까요?<br>6가지만 선택하면 대표 회의 1개의 연간 비용을 계산해드려요.</p>
+    <button class="start-btn" onclick="goToQuestions()">진단 시작하기</button>
+  </div>
 
-    <canvas id="game" width="640" height="380" style="width:100%; max-width:600px; display:block; margin:0 auto; border-radius:12px; background:linear-gradient(180deg, #0B0E20, #171B34);"></canvas>
-
-    <div style="text-align:center; margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-      <button class="btn btn-ghost" onmousedown="setDir(-1)" onmouseup="setDir(0)" ontouchstart="setDir(-1)" ontouchend="setDir(0)">▲ 위로</button>
-      <button class="btn btn-primary" onclick="shoot()">🔥 발사</button>
-      <button class="btn btn-ghost" onmousedown="setDir(1)" onmouseup="setDir(0)" ontouchstart="setDir(1)" ontouchend="setDir(0)">▼ 아래로</button>
-    </div>
-
-    <div id="toast" class="toast info">
-      💥 게임 오버! <span id="resultText"></span>
-      <div style="margin-top:12px;">
-        <button class="btn btn-primary" onclick="startGame()">다시 시작</button>
-      </div>
+  <!-- 질문 -->
+  <div id="quizWrap" style="display:none;">
+    <div class="progress-row" id="progressRow"></div>
+    <div id="questionsHost"></div>
+    <div class="nav-row">
+      <button class="nav-btn" id="prevBtn" onclick="prevStep()">← 이전</button>
+      <button class="nav-btn" id="restartMidBtn" onclick="restartAll()">처음부터</button>
     </div>
   </div>
-</main>
 
-<footer class="site-footer">COPYRIGHT (c) TEConnect Inc. ALL RIGHTS RESERVED.</footer>
+  <!-- 계산중 -->
+  <div id="loadingStep" style="display:none;">
+    <div class="spinner"></div>
+    <div style="color:var(--ink-dim); font-weight:700;">회의 비용을 계산하는 중...</div>
+  </div>
+
+  <!-- 결과 -->
+  <div id="resultStep" style="display:none;"></div>
+</div>
 
 <script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-let W, H, ship, obstacles, bullets, score, best = 0, lives, dir = 0, running = false, frame = 0;
+const QUESTIONS = [
+  { q: '회의는 일주일에 평균 몇 회 진행하시나요?', opts: [
+      {label:'1~2회', value:1.5}, {label:'3~5회', value:4}, {label:'6~10회', value:8}, {label:'10회 이상', value:12}
+  ]},
+  { q: '회의 1회 평균 소요시간은?', opts: [
+      {label:'30분', value:0.5}, {label:'1시간', value:1}, {label:'1.5시간', value:1.5}, {label:'2시간 이상', value:2}
+  ]},
+  { q: '회의 1회 평균 참석자는 몇 명인가요?', opts: [
+      {label:'3명', value:3}, {label:'5명', value:5}, {label:'8명', value:8}, {label:'10명 이상', value:10}
+  ]},
+  { q: '주요 회의 참석자의 평균 연봉 수준은?', opts: [
+      {label:'4천만원', value:40000000}, {label:'5천만원', value:50000000}, {label:'7천만원', value:70000000}, {label:'1억 이상', value:100000000}
+  ]},
+  { q: '회의 시작 전 준비·대기시간은 평균 얼마나 걸리나요?', opts: [
+      {label:'0~5분', value:2.5}, {label:'10분', value:10}, {label:'15분', value:15}, {label:'20분 이상', value:20}
+  ]},
+  { q: '회의 후 회의록·자료 공유 등에 얼마나 걸리나요?', opts: [
+      {label:'0~10분', value:5}, {label:'20분', value:20}, {label:'30분', value:30}, {label:'1시간 이상', value:60}
+  ]},
+];
 
-function resize(){
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-  W = canvas.width; H = canvas.height;
+const AFTER_MEETING_STAFF = 1; // 후처리 담당 인원 기본값
+
+let currentStep = 0;
+let answers = new Array(QUESTIONS.length).fill(null);
+let answerLabels = new Array(QUESTIONS.length).fill(null);
+
+function buildUI(){
+  const host = document.getElementById('questionsHost');
+  host.innerHTML = '';
+  QUESTIONS.forEach((item, qi)=>{
+    const div = document.createElement('div');
+    div.className = 'q-step';
+    div.id = 'step-' + qi;
+    div.innerHTML = `
+      <div class="q-title">${item.q}</div>
+      <div class="opt-grid">
+        ${item.opts.map((o,oi)=>`<button class="opt-btn" data-qi="${qi}" data-oi="${oi}" onclick="selectOption(${qi},${oi})">${o.label}</button>`).join('')}
+      </div>`;
+    host.appendChild(div);
+  });
+
+  const progressRow = document.getElementById('progressRow');
+  progressRow.innerHTML = QUESTIONS.map((_, i)=>`<div class="progress-dot" id="dot-${i}"></div>`).join('');
 }
-window.addEventListener('resize', resize);
 
-function setDir(d){ dir = d; }
-
-function shoot(){
-  if(!running) return;
-  bullets.push({x: ship.x+24, y: ship.y, r:4});
-}
-
-document.addEventListener('keydown', (e)=>{
-  if(e.key==='ArrowUp') dir = -1;
-  if(e.key==='ArrowDown') dir = 1;
-  if(e.code==='Space') shoot();
-});
-document.addEventListener('keyup', (e)=>{
-  if(e.key==='ArrowUp' || e.key==='ArrowDown') dir = 0;
-});
-
-function spawnObstacle(){
-  const r = 16 + Math.random()*14;
-  obstacles.push({
-    x: W + r,
-    y: Math.random()*(H-2*r)+r,
-    r,
-    vx: 2 + Math.random()*2 + score*0.01
+function showStep(i){
+  document.querySelectorAll('.q-step').forEach(el=>el.classList.remove('active'));
+  const el = document.getElementById('step-'+i);
+  if(el) el.classList.add('active');
+  document.getElementById('prevBtn').disabled = (i === 0);
+  QUESTIONS.forEach((_, idx)=>{
+    document.getElementById('dot-'+idx).classList.toggle('done', idx < i || (idx===i && answers[idx]!==null));
   });
 }
 
-function drawShip(){
-  ctx.save();
-  ctx.translate(ship.x, ship.y);
-  ctx.fillStyle = '#57E0D8';
-  ctx.beginPath();
-  ctx.moveTo(24, 0);
-  ctx.lineTo(-16, -14);
-  ctx.lineTo(-8, 0);
-  ctx.lineTo(-16, 14);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-}
+function selectOption(qi, oi){
+  answers[qi] = QUESTIONS[qi].opts[oi].value;
+  answerLabels[qi] = QUESTIONS[qi].opts[oi].label;
+  document.querySelectorAll(`#step-${qi} .opt-btn`).forEach(b=>b.classList.remove('selected'));
+  document.querySelector(`#step-${qi} .opt-btn[data-oi="${oi}"]`).classList.add('selected');
+  document.getElementById('dot-'+qi).classList.add('done');
 
-function loop(){
-  if(!running) return;
-  frame++;
-  ctx.clearRect(0,0,W,H);
-
-  // stars
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  for(let i=0;i<24;i++){
-    const sx = (i*53 + frame*1.2) % W;
-    const sy = (i*97) % H;
-    ctx.fillRect(sx, sy, 2, 2);
-  }
-
-  ship.y += dir*4;
-  ship.y = Math.max(18, Math.min(H-18, ship.y));
-  drawShip();
-
-  if(frame % Math.max(20, 60-Math.floor(score/5)) === 0) spawnObstacle();
-
-  ctx.fillStyle = '#FF6B5B';
-  obstacles.forEach(o=>{
-    o.x -= o.vx;
-    ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2); ctx.fill();
-  });
-  obstacles = obstacles.filter(o=>o.x > -30);
-
-  ctx.fillStyle = '#FFB648';
-  bullets.forEach(b=>{
-    b.x += 8;
-    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
-  });
-  bullets = bullets.filter(b=>b.x < W+20);
-
-  // bullet-obstacle collisions
-  for(let i=obstacles.length-1;i>=0;i--){
-    const o = obstacles[i];
-    for(let j=bullets.length-1;j>=0;j--){
-      const b = bullets[j];
-      if(Math.hypot(o.x-b.x, o.y-b.y) < o.r+b.r){
-        obstacles.splice(i,1);
-        bullets.splice(j,1);
-        score += 10;
-        document.getElementById('score').textContent = score;
-        break;
-      }
+  setTimeout(()=>{
+    if(qi < QUESTIONS.length - 1){
+      currentStep = qi + 1;
+      showStep(currentStep);
+    } else {
+      runCalculation();
     }
+  }, 250);
+}
+
+function prevStep(){
+  if(currentStep > 0){ currentStep--; showStep(currentStep); }
+}
+
+function goToQuestions(){
+  document.getElementById('introStep').style.display = 'none';
+  document.getElementById('quizWrap').style.display = 'block';
+  currentStep = 0;
+  answers = new Array(QUESTIONS.length).fill(null);
+  answerLabels = new Array(QUESTIONS.length).fill(null);
+  buildUI();
+  showStep(0);
+}
+
+function restartAll(){
+  document.getElementById('quizWrap').style.display = 'none';
+  document.getElementById('loadingStep').style.display = 'none';
+  document.getElementById('resultStep').style.display = 'none';
+  document.getElementById('introStep').style.display = 'block';
+}
+
+function formatWon(n){
+  const man = Math.round(n / 10000);
+  if(man >= 10000){
+    const eok = Math.floor(man / 10000);
+    const rest = man % 10000;
+    return rest > 0 ? `${eok}억 ${rest.toLocaleString()}만원` : `${eok}억원`;
   }
+  return `${man.toLocaleString()}만원`;
+}
+function formatExact(n){ return Math.round(n).toLocaleString() + '원'; }
 
-  // ship-obstacle collisions
-  for(let i=obstacles.length-1;i>=0;i--){
-    const o = obstacles[i];
-    if(Math.hypot(o.x-ship.x, o.y-ship.y) < o.r+14){
-      obstacles.splice(i,1);
-      lives--;
-      document.getElementById('lives').textContent = lives;
-      if(lives<=0){ gameOver(); return; }
-    }
-  }
+function runCalculation(){
+  document.getElementById('quizWrap').style.display = 'none';
+  document.getElementById('loadingStep').style.display = 'block';
 
-  score += 0; // score only from destroying; survival tracked separately
-  if(frame % 30 === 0){ score += 1; document.getElementById('score').textContent = score; }
+  setTimeout(()=>{
+    const [weeklyCount, durationH, attendees, salary, prepMin, afterMin] = answers;
+    const hourlyWage = salary / 2080;
 
-  requestAnimationFrame(loop);
+    const pureCost = weeklyCount * durationH * attendees * hourlyWage * 52;
+    const prepCost = weeklyCount * (prepMin/60) * attendees * hourlyWage * 52;
+    const afterCost = weeklyCount * (afterMin/60) * AFTER_MEETING_STAFF * hourlyWage * 52;
+    const overheadCost = prepCost + afterCost;
+    const totalCost = pureCost + overheadCost;
+    const overheadPercent = Math.round((overheadCost/totalCost)*100);
+    const halfPrepSaving = prepCost / 2;
+
+    renderResult({
+      pureCost, prepCost, afterCost, overheadCost, totalCost, overheadPercent, halfPrepSaving,
+      weeklyCount, durationH, attendees, salary, prepMin, afterMin, hourlyWage,
+      labels: answerLabels
+    });
+
+    document.getElementById('loadingStep').style.display = 'none';
+    document.getElementById('resultStep').style.display = 'block';
+  }, 900);
 }
 
-function gameOver(){
-  running = false;
-  best = Math.max(best, score);
-  document.getElementById('best').textContent = best;
-  document.getElementById('resultText').textContent = `최종 점수 ${score}점`;
-  document.getElementById('toast').classList.add('show');
-}
+function renderResult(r){
+  const el = document.getElementById('resultStep');
+  el.innerHTML = `
+    <div class="result-lead">대표 회의 1개의 연간 총 비용</div>
+    <div class="total-cost">${formatWon(r.totalCost)}</div>
 
-function startGame(){
-  resize();
-  ship = { x: 60, y: H/2 };
-  obstacles = []; bullets = []; score = 0; lives = 3; frame = 0; dir = 0;
-  document.getElementById('score').textContent = 0;
-  document.getElementById('lives').textContent = 3;
-  document.getElementById('toast').classList.remove('show');
-  running = true;
-  requestAnimationFrame(loop);
-}
+    <div class="cost-cards">
+      <div class="cost-card">
+        <div class="lbl">회의 자체 비용</div>
+        <div class="val">${formatWon(r.pureCost)}</div>
+      </div>
+      <div class="cost-card overhead">
+        <div class="lbl">준비·대기·후처리 비용</div>
+        <div class="val">${formatWon(r.overheadCost)}</div>
+      </div>
+    </div>
 
-startGame();
+    <div class="callout">
+      전체 회의비의 약 <span class="big">${r.overheadPercent}%</span>가 회의 외 시간에서 발생하고 있어요
+    </div>
+
+    <div class="save-callout">
+      <div class="lbl">회의 준비시간을 절반으로 줄인다면?</div>
+      <div class="val">연간 약 ${formatWon(r.halfPrepSaving)} 상당의 업무시간 확보</div>
+    </div>
+
+    <details class="calc-detail">
+      <summary>🧮 이렇게 계산했어요 (계산 과정 보기)</summary>
+      <div class="calc-body">
+        <div class="calc-line"><b>시간당 인건비</b> = 평균 연봉 ${r.labels[3]} ÷ 2,080시간 = <b>${formatExact(r.hourlyWage)}</b>/시간</div>
+        <div class="calc-line">
+          <b>① 회의 자체 비용</b><br>
+          주 ${r.labels[0]} × ${r.labels[1]} × 참석 ${r.labels[2]} × ${formatExact(r.hourlyWage)} × 52주 = <b>${formatWon(r.pureCost)}</b>
+        </div>
+        <div class="calc-line">
+          <b>② 준비·대기 비용</b><br>
+          주 ${r.labels[0]} × (${r.labels[4]} ÷ 60) × 참석 ${r.labels[2]} × ${formatExact(r.hourlyWage)} × 52주 = <b>${formatWon(r.prepCost)}</b>
+        </div>
+        <div class="calc-line">
+          <b>③ 회의 후 정리 비용</b><br>
+          주 ${r.labels[0]} × (${r.labels[5]} ÷ 60) × 정리담당 1명 × ${formatExact(r.hourlyWage)} × 52주 = <b>${formatWon(r.afterCost)}</b>
+        </div>
+        <div class="calc-line total">
+          <b>총합 (①+②+③)</b> = <b>${formatWon(r.totalCost)}</b>
+        </div>
+        <div class="calc-line total overhead-line">
+          <b>회의 전후 비용 (②+③)</b> = <b>${formatWon(r.overheadCost)}</b>
+        </div>
+      </div>
+    </details>
+
+    <div class="pitch-box">
+      <div class="problem">문제는 회의 자체보다<br>회의를 시작하고 운영하는 데 드는 시간일 수 있습니다.</div>
+      <div class="tagline">Connect. Meet. Share. Collaborate.</div>
+      <div class="sub">하나의 디바이스에서 시작되는 올인원 회의 환경, TEConnect</div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn btn-primary" onclick="restartAll()">다시 진단하기</button>
+      <a class="btn btn-ghost" href="index.html">메인으로</a>
+    </div>
+  `;
+}
 </script>
 
 </body>

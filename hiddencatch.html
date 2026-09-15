@@ -163,6 +163,29 @@ h1 { font-size: clamp(1.5em, 3.5vh, 2.2em); margin: 0; text-align: center; }
     <button id="fullscreenButton">전체화면</button>
     <a href="index.html" class="back-button">메인으로</a>
   </div>
+
+  <div id="customPanel" style="flex-shrink:0; margin-top:6px; text-align:left; font-size:0.85rem;">
+    <details>
+      <summary style="cursor:pointer; opacity:0.8;">내 사진으로 문제 만들기 (여러 개 등록 가능, 관리자용)</summary>
+      <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px; max-width:480px;">
+        <input type="text" id="customName" placeholder="문제 이름 (예: 우리 회사 사무실)" style="padding:8px; border-radius:8px; border:1px solid var(--slot-bg); background:#0f3460; color:var(--text-color);">
+        <label>원본 사진: <input type="file" id="origPhoto" accept="image/*"></label>
+        <label>다른 점이 있는 사진: <input type="file" id="diffPhoto" accept="image/*"></label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <button id="addCustomBtn">추가하기</button>
+          <span id="customStatus"></span>
+        </div>
+        <div>등록된 내 문제(임시, 이 브라우저에만) <b id="customCount" style="color:var(--primary-color);">0</b>개
+          <button id="clearCustomBtn">전체 삭제</button>
+        </div>
+        <div style="margin-top:6px; padding-top:10px; border-top:1px solid var(--slot-bg);">
+          <button id="exportBtn">📋 코드로 내보내기 (파일에 영구 반영하기)</button>
+          <p style="opacity:0.75; margin:6px 0 0;">위 버튼을 누르면 아래에 코드가 생성돼요. 전체 복사해서 <code>race.html</code>이 아니라 <code>hiddencatch.html</code> 파일 안의 <code>EMBEDDED_CUSTOM_PROBLEMS</code> 배열 자리에 붙여넣고 저장하면, 어떤 기기에서 열어도 항상 그 문제가 나옵니다.</p>
+          <textarea id="exportOutput" readonly style="width:100%; height:120px; margin-top:6px; background:#0f3460; color:var(--text-color); border:1px solid var(--slot-bg); border-radius:8px; padding:8px; font-family:monospace; font-size:0.75rem; display:none;"></textarea>
+        </div>
+      </div>
+    </details>
+  </div>
 </div>
 
 <div id="ranking-panel" class="hidden">
@@ -356,12 +379,191 @@ document.addEventListener('DOMContentLoaded', () => {
     resetRankingButton.addEventListener('click', resetRanking);
     window.addEventListener('resize', redrawMarkers);
 
+    // ▼▼▼ 사전 등록한 문제를 여기에 붙여넣으세요 ▼▼▼
+    // 아래 "내 사진으로 문제 만들기" 패널에서 사진을 등록하고 "코드로 내보내기"를 누르면
+    // 이 배열에 붙여넣을 수 있는 코드가 만들어집니다. 그렇게 하면 이 파일을 여는 어떤 기기에서든
+    // (localStorage 없이도) 항상 같은 문제가 나타납니다.
+    const EMBEDDED_CUSTOM_PROBLEMS = [
+        // { name: '우리 회사 사무실', images: { question: 'data:image/jpeg;base64,...', answer: '...', solution: '...' }, spots: [{x:120,y:80,r:30}, ...] },
+    ];
+    // ▲▲▲ 여기까지 ▲▲▲
+
+    const CUSTOM_KEY = 'tc_hiddencatch_custom_problems';
+
+    function loadCustomProblems(){
+        try{ return JSON.parse(localStorage.getItem(CUSTOM_KEY)) || []; }
+        catch(e){ return []; }
+    }
+    function saveCustomProblems(list){ localStorage.setItem(CUSTOM_KEY, JSON.stringify(list)); }
+
+    function drawCoverFitTo(ctx, img, w, h){
+        ctx.clearRect(0,0,w,h);
+        const scale = Math.max(w/img.width, h/img.height);
+        const dw = img.width*scale, dh = img.height*scale;
+        ctx.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
+    }
+
+    function loadImageFile(file){
+        return new Promise((resolve, reject)=>{
+            const reader = new FileReader();
+            reader.onload = (ev)=>{
+                const img = new Image();
+                img.onload = ()=>resolve(img);
+                img.onerror = reject;
+                img.src = ev.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function computeDiffSpots(imgA, imgB, W, H){
+        const cA = document.createElement('canvas'); cA.width = W; cA.height = H;
+        const ctxA = cA.getContext('2d'); drawCoverFitTo(ctxA, imgA, W, H);
+        const cB = document.createElement('canvas'); cB.width = W; cB.height = H;
+        const ctxB = cB.getContext('2d'); drawCoverFitTo(ctxB, imgB, W, H);
+
+        const dataA = ctxA.getImageData(0,0,W,H).data;
+        const dataB = ctxB.getImageData(0,0,W,H).data;
+
+        const grid = 10;
+        const cols = Math.floor(W/grid), rows = Math.floor(H/grid);
+        const changed = new Array(cols*rows).fill(false);
+
+        for(let gy=0; gy<rows; gy++){
+            for(let gx=0; gx<cols; gx++){
+                const px = Math.min(W-1, gx*grid + Math.floor(grid/2));
+                const py = Math.min(H-1, gy*grid + Math.floor(grid/2));
+                const idx = (py*W + px) * 4;
+                const diff = Math.abs(dataA[idx]-dataB[idx]) + Math.abs(dataA[idx+1]-dataB[idx+1]) + Math.abs(dataA[idx+2]-dataB[idx+2]);
+                if(diff > 60) changed[gy*cols+gx] = true;
+            }
+        }
+
+        const visited = new Array(cols*rows).fill(false);
+        const clusters = [];
+        for(let i=0;i<cols*rows;i++){
+            if(changed[i] && !visited[i]){
+                const stack = [i]; visited[i] = true;
+                const cells = [];
+                while(stack.length){
+                    const c = stack.pop();
+                    cells.push(c);
+                    const cx = c % cols, cy = Math.floor(c/cols);
+                    [[cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]].forEach(([nx,ny])=>{
+                        if(nx>=0 && nx<cols && ny>=0 && ny<rows){
+                            const ni = ny*cols+nx;
+                            if(changed[ni] && !visited[ni]){ visited[ni] = true; stack.push(ni); }
+                        }
+                    });
+                }
+                if(cells.length >= 2){
+                    let sx=0, sy=0, minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+                    cells.forEach(c=>{
+                        const cx = (c%cols)*grid + grid/2, cy = Math.floor(c/cols)*grid + grid/2;
+                        sx += cx; sy += cy;
+                        minX = Math.min(minX,cx); maxX = Math.max(maxX,cx);
+                        minY = Math.min(minY,cy); maxY = Math.max(maxY,cy);
+                    });
+                    const r = Math.min(50, Math.max(26, Math.max(maxX-minX, maxY-minY)/2 + 12));
+                    clusters.push({ x: sx/cells.length, y: sy/cells.length, r, size: cells.length });
+                }
+            }
+        }
+        clusters.sort((a,b)=>b.size-a.size);
+        const spots = clusters.slice(0, 8).map(c=>({ x:c.x, y:c.y, r:c.r }));
+        return { spots, qCanvas: cA, aCanvas: cB };
+    }
+
+    async function addCustomProblem(){
+        const nameInput = document.getElementById('customName');
+        const origInput = document.getElementById('origPhoto');
+        const diffInput = document.getElementById('diffPhoto');
+        const statusEl = document.getElementById('customStatus');
+
+        if(!origInput.files[0] || !diffInput.files[0]){
+            statusEl.textContent = '두 사진을 모두 선택해주세요.';
+            return;
+        }
+        statusEl.textContent = '분석 중...';
+        try{
+            const [imgA, imgB] = await Promise.all([loadImageFile(origInput.files[0]), loadImageFile(diffInput.files[0])]);
+            const { spots, qCanvas, aCanvas } = computeDiffSpots(imgA, imgB, CANVAS_W, CANVAS_H);
+
+            if(spots.length < 2){
+                statusEl.textContent = '차이를 충분히 찾지 못했어요. 더 뚜렷하게 차이 나는 사진으로 시도해주세요.';
+                return;
+            }
+
+            const sCanvas = document.createElement('canvas');
+            sCanvas.width = CANVAS_W; sCanvas.height = CANVAS_H;
+            const sCtx = sCanvas.getContext('2d');
+            sCtx.drawImage(aCanvas, 0, 0);
+            sCtx.strokeStyle = '#28a745';
+            sCtx.lineWidth = 4;
+            spots.forEach(sp => { sCtx.beginPath(); sCtx.arc(sp.x, sp.y, sp.r, 0, Math.PI*2); sCtx.stroke(); });
+
+            const list = loadCustomProblems();
+            list.push({
+                name: (nameInput.value || '내 사진 문제').trim(),
+                images: { question: qCanvas.toDataURL('image/jpeg', 0.85), answer: aCanvas.toDataURL('image/jpeg', 0.85), solution: sCanvas.toDataURL('image/jpeg', 0.85) },
+                spots
+            });
+            saveCustomProblems(list);
+            statusEl.textContent = `✓ 등록 완료! (다른 점 ${spots.length}곳 감지됨)`;
+            nameInput.value = ''; origInput.value = ''; diffInput.value = '';
+            updateCustomCount();
+        } catch(e){
+            statusEl.textContent = '사진을 읽는 중 오류가 발생했습니다.';
+        }
+    }
+
+    function updateCustomCount(){
+        document.getElementById('customCount').textContent = loadCustomProblems().length;
+    }
+    function clearCustomProblems(){
+        if(!confirm('등록된 내 문제를 전부 삭제할까요?')) return;
+        saveCustomProblems([]);
+        updateCustomCount();
+        document.getElementById('customStatus').textContent = '';
+    }
+
+    function exportCustomProblems(){
+        const list = loadCustomProblems();
+        const output = document.getElementById('exportOutput');
+        if(list.length === 0){
+            output.style.display = 'block';
+            output.value = '등록된 문제가 없습니다. 먼저 사진을 등록해주세요.';
+            return;
+        }
+        const code = 'const EMBEDDED_CUSTOM_PROBLEMS = ' + JSON.stringify(list, null, 2) + ';';
+        output.style.display = 'block';
+        output.value = code;
+        output.focus();
+        output.select();
+    }
+
+    document.getElementById('addCustomBtn').addEventListener('click', addCustomProblem);
+    document.getElementById('clearCustomBtn').addEventListener('click', clearCustomProblems);
+    document.getElementById('exportBtn').addEventListener('click', exportCustomProblems);
+    updateCustomCount();
+
+    function pickProblem(){
+        const customList = loadCustomProblems();
+        const pool = [
+            ...SCENE_NAMES.map(name => ({ kind: 'scene', name })),
+            ...EMBEDDED_CUSTOM_PROBLEMS.map(p => ({ kind: 'data', data: p })),
+            ...customList.map(p => ({ kind: 'data', data: p })),
+        ];
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        return pick.kind === 'scene' ? buildProblem(pick.name) : pick.data;
+    }
+
     function initGame() {
         isGameActive = false; isPaused = false;
         clearInterval(timerInterval);
         seconds = 0; foundCount = 0;
-        const name = SCENE_NAMES[Math.floor(Math.random() * SCENE_NAMES.length)];
-        currentProblem = buildProblem(name);
+        currentProblem = pickProblem();
         problemNameEl.textContent = currentProblem.name;
         originalImage.src = currentProblem.images.question;
         modifiedImage.src = currentProblem.images.answer;

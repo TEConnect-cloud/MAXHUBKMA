@@ -54,7 +54,7 @@
 
     <div style="text-align:center; margin-bottom:14px;">
       <button class="btn btn-primary" onclick="newRound()">새 제시어 뽑기</button>
-      <button class="btn btn-ghost" onclick="revealWord()">제시어 보기</button>
+      <button class="btn btn-ghost" id="revealBtn" onclick="toggleReveal()">제시어 보기</button>
     </div>
 
     <canvas id="drawCanvas" width="560" height="420"></canvas>
@@ -139,9 +139,10 @@ function pickWord(){
   return WORDS[Math.floor(Math.random()*WORDS.length)];
 }
 
-function revealWord(){
-  revealed = true;
-  document.getElementById('wordBox').textContent = currentWord;
+function toggleReveal(){
+  revealed = !revealed;
+  document.getElementById('wordBox').textContent = revealed ? currentWord : '? ? ?';
+  document.getElementById('revealBtn').textContent = revealed ? '제시어 숨기기' : '제시어 보기';
 }
 
 function tick(){
@@ -157,6 +158,7 @@ function newRound(){
   currentWord = pickWord();
   revealed = false;
   document.getElementById('wordBox').textContent = '? ? ?';
+  document.getElementById('revealBtn').textContent = '제시어 보기';
   seconds = 60;
   document.getElementById('timer').textContent = seconds;
   document.getElementById('toast').classList.remove('show');
