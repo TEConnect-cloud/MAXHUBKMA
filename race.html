@@ -194,22 +194,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const FRAME_HEIGHT = 80;
     const RACE_DURATION = 6;
 
-    // ▼ 경주마 목록 — name만 바꿔도 됩니다. (아이콘/스프라이트 이미지 파일은 없어서 이모지로 대체됩니다)
+    // ▼ 경주마 목록 — name과 색상만 바꿔도 됩니다. 실제 이미지 파일 없이 SVG로 그린 말 그림을 씁니다.
     const horseData = [
-        { name: '천리마', iconImage: 'horse_천리마_icon.png', sprite: 'horse_천리마.png' },
-        { name: '적토마', iconImage: 'horse_적토마_icon.png', sprite: 'horse_적토마.png' },
-        { name: '백마',   iconImage: 'horse_백마_icon.png',   sprite: 'horse_백마.png' },
-        { name: '흑마',   iconImage: 'horse_흑마_icon.png',   sprite: 'horse_흑마.png' },
-        { name: '조랑말', iconImage: 'horse_조랑말_icon.png', sprite: 'horse_조랑말.png' },
+        { name: '천리마', body: '#57E0D8', mane: '#1B2140', outline: null,      stubby: false },
+        { name: '적토마', body: '#FF6B5B', mane: '#7A1F14', outline: null,      stubby: false },
+        { name: '백마',   body: '#F3F1EC', mane: '#C9A876', outline: '#1B2140', stubby: false },
+        { name: '흑마',   body: '#4A3423', mane: '#1B2140', outline: null,      stubby: false },
+        { name: '조랑말', body: '#FFB648', mane: '#7A5A22', outline: null,      stubby: true  },
     ];
+
+    function horseSVG(h){
+        const legH = h.stubby ? 14 : 22;
+        const neckRot = h.stubby ? 8 : 15;
+        const strokeAttr = h.outline ? `stroke="${h.outline}" stroke-width="1.6"` : '';
+        return `<svg viewBox="0 0 120 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <path d="M22,50 C10,48 6,58 10,68 C13,62 16,58 22,58 Z" fill="${h.mane}"/>
+            <rect x="25" y="70" width="7" height="${legH}" rx="3" fill="${h.body}" ${strokeAttr}/>
+            <rect x="38" y="70" width="7" height="${legH}" rx="3" fill="${h.body}" ${strokeAttr}/>
+            <rect x="55" y="70" width="7" height="${legH}" rx="3" fill="${h.body}" ${strokeAttr}/>
+            <rect x="66" y="70" width="7" height="${legH}" rx="3" fill="${h.body}" ${strokeAttr}/>
+            <rect x="25" y="${70+legH-4}" width="7" height="4" rx="1.5" fill="#1B2140" opacity="0.55"/>
+            <rect x="38" y="${70+legH-4}" width="7" height="4" rx="1.5" fill="#1B2140" opacity="0.55"/>
+            <rect x="55" y="${70+legH-4}" width="7" height="4" rx="1.5" fill="#1B2140" opacity="0.55"/>
+            <rect x="66" y="${70+legH-4}" width="7" height="4" rx="1.5" fill="#1B2140" opacity="0.55"/>
+            <rect x="20" y="45" width="55" height="28" rx="14" fill="${h.body}" ${strokeAttr}/>
+            <rect x="58" y="20" width="16" height="40" rx="8" transform="rotate(${neckRot} 66 40)" fill="${h.body}" ${strokeAttr}/>
+            <path d="M62,18 L70,14 L68,24 L76,20 L72,30 L80,28" stroke="${h.mane}" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="72" y="12" width="30" height="20" rx="9" fill="${h.body}" ${strokeAttr}/>
+            <polygon points="78,12 83,2 88,13" fill="${h.body}" ${strokeAttr}/>
+            <rect x="97" y="17" width="9" height="9" rx="3" fill="${h.body}" ${strokeAttr}/>
+            <circle cx="87" cy="20" r="2" fill="#1B2140"/>
+        </svg>`;
+    }
 
     // ▼ 경품 목록 — name(경품명)과 initialCount(수량)만 바꾸면 됩니다.
     let prizeData = [
-        { name: '50% 할인권', initialCount: 1,  currentCount: 1 },
-        { name: '30% 할인권', initialCount: 3,  currentCount: 3 },
-        { name: '에코백',     initialCount: 51, currentCount: 51 },
-        { name: '큐브메모함', initialCount: 49, currentCount: 49 },
-        { name: '꽝',         initialCount: 16, currentCount: 16 }
+        { name: '50% 할인권',   initialCount: 3,   currentCount: 3 },
+        { name: '30% 할인권',   initialCount: 3,   currentCount: 3 },
+        { name: '태블릿 파우치', initialCount: 200, currentCount: 200 },
+        { name: '텀블러',       initialCount: 40,  currentCount: 40 },
+        { name: '우산',         initialCount: 10,  currentCount: 10 }
     ];
 
     let gameInProgress = false;
@@ -229,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const horseEl = document.createElement('div');
             horseEl.className = 'horse';
             horseEl.dataset.index = index;
-            horseEl.innerHTML = `<div class="horse-icon-emoji">🐎</div><span>${horse.name}</span>`;
+            horseEl.innerHTML = `<div class="horse-icon-emoji">${horseSVG(horse)}</div><span>${horse.name}</span>`;
             horseEl.addEventListener('click', startRace);
             startLane.appendChild(horseEl);
         });
@@ -326,8 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
             runner.style.animation = `run-on-path ${RACE_DURATION}s ease-in-out forwards, run-sprite 0.8s steps(${SPRITE_FRAMES}) infinite`;
         };
         horseImg.onerror = () => {
-            runner.textContent = '🐎';
-            runner.style.fontSize = '2.5rem';
+            runner.innerHTML = horseSVG(selectedHorseData);
             runner.style.display = 'flex';
             runner.style.justifyContent = 'center';
             runner.style.alignItems = 'center';
