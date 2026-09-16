@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>전자칠판 용어 짝 맞추기 · 테크커넥트 게임 이벤트</title>
+<title>기억력 검사 · 테크커넥트 게임 이벤트</title>
 <link rel="stylesheet" href="style.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;700&display=swap');
@@ -166,7 +166,7 @@ body {
 <body>
 
 <div class="game-container">
-  <h1>전자칠판 용어 짝 맞추기</h1>
+  <h1>기억력 검사</h1>
 
   <div class="game-info-panel">
     <div class="timer-bar"><div class="timer-progress"></div></div>
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 modalDetail.textContent = `걸린 시간: ${minutes > 0 ? `${minutes}분 ` : ''}${seconds}초`;
 
                 const storageKey = `${GAME_ID}_${currentLevelId}`;
-                Ranking.promptNameAndSave(storageKey, `전자칠판 용어 짝 맞추기`, timeElapsed, `${minutes > 0 ? `${minutes}분 ` : ''}${seconds}초`, 'asc');
+                Ranking.promptNameAndSave(storageKey, `기억력 검사`, timeElapsed, `${minutes > 0 ? `${minutes}분 ` : ''}${seconds}초`, 'asc');
 
             } else {
                 modalMessage.textContent = '😭 아쉽네요, 시간 초과! 😭';
@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showRankingBtn.addEventListener('click', () => {
         const storageKey = `${GAME_ID}_${currentLevelId}`;
-        Ranking.showModal(storageKey, `전자칠판 용어 짝 맞추기`);
+        Ranking.showModal(storageKey, `기억력 검사`);
     });
 
     pauseButton.addEventListener('click', togglePause);
