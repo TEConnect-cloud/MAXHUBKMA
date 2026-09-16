@@ -25,6 +25,18 @@
     justify-content:center;
     margin-top:16px;
   }
+  #canvasWrap{ position:relative; max-width:560px; margin:0 auto; }
+  #wordCorner{
+    position:absolute;
+    left:10px; bottom:10px;
+    color:#0F1226;
+    font-weight:800;
+    font-size:1.05rem;
+    background:rgba(255,255,255,0.85);
+    padding:4px 10px;
+    border-radius:8px;
+    pointer-events:none;
+  }
   .swatch{
     width:28px; height:28px; border-radius:50%;
     border: 2px solid var(--line);
@@ -36,7 +48,7 @@
 <body>
 
 <header class="topbar">
-  <div class="brand"><span class="mark">TC</span> 테크커넥트</div>
+  <div class="brand"><img src="logo.png" alt="TEConnect" style="height:24px; width:auto;"></div>
   <a class="back" href="index.html">← 게임 목록</a>
 </header>
 
@@ -48,16 +60,20 @@
 
   <div class="game-board">
     <div class="hud">
-      <div class="stat">제시어 <b id="wordBox">? ? ?</b></div>
       <div class="stat">남은 시간 <b id="timer">60</b>초</div>
     </div>
 
-    <div style="text-align:center; margin-bottom:14px;">
+    <div style="text-align:center; margin-bottom:14px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
       <button class="btn btn-primary" onclick="newRound()">새 제시어 뽑기</button>
       <button class="btn btn-ghost" id="revealBtn" onclick="toggleReveal()">제시어 보기</button>
+      <button class="btn btn-primary" id="correctBtn" onclick="markCorrect()">✅ 정답</button>
+      <button class="btn btn-ghost" onclick="Ranking.showModal('catchmind','캐치마인드')">랭킹 보기</button>
     </div>
 
-    <canvas id="drawCanvas" width="560" height="420"></canvas>
+    <div id="canvasWrap">
+      <canvas id="drawCanvas" width="560" height="420"></canvas>
+      <div id="wordCorner">? ? ?</div>
+    </div>
 
     <div class="tools">
       <span class="swatch active" style="background:#0F1226" data-color="#0F1226" onclick="setColor(this)"></span>
@@ -80,12 +96,13 @@
 
 <footer class="site-footer">COPYRIGHT (c) TEConnect Inc. ALL RIGHTS RESERVED.</footer>
 
+<script src="ranking.js"></script>
 <script>
 const WORDS = ['코끼리','피자','전자칠판','우산','축구공','로봇','무지개','자전거','고양이','비행기','선풍기','아이스크림','기린','카메라','스마트폰','수박','토끼','드론','버섯','안경'];
 
 const canvas = document.getElementById('drawCanvas');
 const ctx = canvas.getContext('2d');
-let drawing = false, color = '#0F1226', size = 5, currentWord = '', seconds = 60, timerId, revealed = false;
+let drawing = false, color = '#0F1226', size = 5, currentWord = '', seconds = 60, timerId, revealed = false, roundLocked = false;
 
 function resizeCanvasBuffer(){
   const rect = canvas.getBoundingClientRect();
@@ -141,8 +158,16 @@ function pickWord(){
 
 function toggleReveal(){
   revealed = !revealed;
-  document.getElementById('wordBox').textContent = revealed ? currentWord : '? ? ?';
+  document.getElementById('wordCorner').textContent = revealed ? currentWord : '? ? ?';
   document.getElementById('revealBtn').textContent = revealed ? '제시어 숨기기' : '제시어 보기';
+}
+
+function markCorrect(){
+  if(roundLocked || !currentWord) return;
+  roundLocked = true;
+  clearInterval(timerId);
+  const elapsed = Math.max(0, 60 - seconds);
+  Ranking.promptNameAndSave('catchmind', '캐치마인드', elapsed, `${elapsed}초`, 'asc');
 }
 
 function tick(){
@@ -150,6 +175,7 @@ function tick(){
   document.getElementById('timer').textContent = seconds;
   if(seconds<=0){
     clearInterval(timerId);
+    roundLocked = true;
     document.getElementById('toast').classList.add('show');
   }
 }
@@ -157,7 +183,8 @@ function tick(){
 function newRound(){
   currentWord = pickWord();
   revealed = false;
-  document.getElementById('wordBox').textContent = '? ? ?';
+  roundLocked = false;
+  document.getElementById('wordCorner').textContent = '? ? ?';
   document.getElementById('revealBtn').textContent = '제시어 보기';
   seconds = 60;
   document.getElementById('timer').textContent = seconds;
