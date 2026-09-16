@@ -261,7 +261,7 @@ footer.site-footer{
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   padding: 28px;
-  max-width: 340px;
+  max-width: 460px;
   width:100%;
   text-align:center;
   position:relative;
@@ -302,9 +302,8 @@ footer.site-footer{
   font-size: 0.92rem;
 }
 .rank-list li span:first-child{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+  white-space:normal;
+  word-break: break-word;
   flex: 1 1 auto;
   min-width:0;
 }
