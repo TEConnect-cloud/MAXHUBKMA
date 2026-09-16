@@ -55,7 +55,7 @@
 <main class="game-shell">
   <div class="game-head">
     <h1>🎨 캐치마인드</h1>
-    <p>한 사람이 제시어를 보고 그림을 그리면, 나머지가 맞혀보세요.</p>
+    <p>한 사람이 제시어를 보고 그림을 그리면, 다른 사람이 맞혀보세요.</p>
   </div>
 
   <div class="game-board">
@@ -64,9 +64,9 @@
     </div>
 
     <div style="text-align:center; margin-bottom:14px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-      <button class="btn btn-primary" onclick="newRound()">새 제시어 뽑기</button>
+      <button class="btn btn-ghost" onclick="newRound()">새 제시어 뽑기</button>
       <button class="btn btn-ghost" id="revealBtn" onclick="toggleReveal()">제시어 보기</button>
-      <button class="btn btn-primary" id="correctBtn" onclick="markCorrect()">✅ 정답</button>
+      <button class="btn btn-ghost" id="correctBtn" onclick="markCorrect()">✅ 정답</button>
       <button class="btn btn-ghost" onclick="Ranking.showModal('catchmind','캐치마인드')">랭킹 보기</button>
     </div>
 
@@ -93,6 +93,17 @@
     </div>
   </div>
 </main>
+
+<div id="resultModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h2>🎉 성공! 🎉</h2>
+    <p id="resultTimeText" style="margin:14px 0; font-size:1.1rem; font-weight:700; color:var(--cyan);"></p>
+    <button class="btn btn-primary" onclick="openRankingEntry()">랭킹 등록</button>
+    <div style="margin-top:10px;">
+      <button class="btn btn-ghost" onclick="closeResultModal()">닫기</button>
+    </div>
+  </div>
+</div>
 
 <footer class="site-footer">COPYRIGHT (c) TEConnect Inc. ALL RIGHTS RESERVED.</footer>
 
@@ -160,14 +171,39 @@ function toggleReveal(){
   revealed = !revealed;
   document.getElementById('wordCorner').textContent = revealed ? currentWord : '? ? ?';
   document.getElementById('revealBtn').textContent = revealed ? '제시어 숨기기' : '제시어 보기';
+
+  if(revealed){
+    // 제시어를 보여주는 동안은 타이머 정지
+    clearInterval(timerId);
+  } else {
+    // 제시어를 숨기는 순간부터 60초 새로 카운트다운 시작
+    seconds = 60;
+    document.getElementById('timer').textContent = seconds;
+    roundLocked = false;
+    document.getElementById('toast').classList.remove('show');
+    clearInterval(timerId);
+    timerId = setInterval(tick, 1000);
+  }
 }
+
+let lastElapsed = 0;
 
 function markCorrect(){
   if(roundLocked || !currentWord) return;
   roundLocked = true;
   clearInterval(timerId);
-  const elapsed = Math.max(0, 60 - seconds);
-  Ranking.promptNameAndSave('catchmind', '캐치마인드', elapsed, `${elapsed}초`, 'asc');
+  lastElapsed = Math.max(0, 60 - seconds);
+  document.getElementById('resultTimeText').textContent = `걸린 시간: ${lastElapsed}초`;
+  document.getElementById('resultModal').classList.remove('hidden');
+}
+
+function openRankingEntry(){
+  document.getElementById('resultModal').classList.add('hidden');
+  Ranking.promptNameAndSave('catchmind', '캐치마인드', lastElapsed, `${lastElapsed}초`, 'asc');
+}
+
+function closeResultModal(){
+  document.getElementById('resultModal').classList.add('hidden');
 }
 
 function tick(){
@@ -191,7 +227,7 @@ function newRound(){
   document.getElementById('toast').classList.remove('show');
   clearCanvas();
   clearInterval(timerId);
-  timerId = setInterval(tick, 1000);
+  // 타이머는 여기서 시작하지 않음 — "제시어 숨기기"를 누르는 순간부터 시작됩니다.
 }
 
 newRound();
