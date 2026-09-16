@@ -309,7 +309,7 @@ function renderResult(r){
         <div class="val">${formatWon(r.pureCost)}</div>
       </div>
       <div class="cost-card overhead">
-        <div class="lbl">준비·대기·후처리 비용</div>
+        <div class="lbl">회의 준비 · 정리 비용</div>
         <div class="val">${formatWon(r.overheadCost)}</div>
       </div>
     </div>
@@ -332,7 +332,7 @@ function renderResult(r){
           주 ${r.labels[0]} × ${r.labels[1]} × 참석 ${r.labels[2]} × ${formatExact(r.hourlyWage)} × 52주 = <b>${formatWon(r.pureCost)}</b>
         </div>
         <div class="calc-line">
-          <b>② 준비·대기 비용</b><br>
+          <b>② 회의 전 준비 비용</b><br>
           주 ${r.labels[0]} × (${r.labels[4]} ÷ 60분) × 참석 ${r.labels[2]} × ${formatExact(r.hourlyWage)} × 52주 = <b>${formatWon(r.prepCost)}</b>
         </div>
         <div class="calc-line">
