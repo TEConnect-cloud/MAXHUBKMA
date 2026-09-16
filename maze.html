@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
         endOverlay.classList.remove('hidden');
         if (isSuccess) {
             const timeTaken = Math.floor((Date.now() - startTime) / 1000);
-            endMessageEl.textContent = '🎉 따라잡았습니다! 🎉';
+            endMessageEl.textContent = '🎉 성공! 🎉';
             endTimeEl.textContent = `걸린 시간: ${timeTaken}초`;
             Ranking.promptNameAndSave(GAME_ID, GAME_TITLE, timeTaken, `${timeTaken}초`, 'asc');
         } else {

@@ -1,24 +1,24 @@
 /* ===========================================================
    TEConnect Game Event — shared design system
-   Palette: deep indigo base, amber + cyan dual accent
+   Palette: light/bright base (matches main hub page), amber + blue accent
    =========================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
 :root{
-  --ink:        #0F1226;
-  --ink-2:      #171B34;
-  --panel:      #1D2142;
-  --panel-2:    #262A4D;
-  --line:       #333960;
-  --paper:      #F3F1EC;
-  --amber:      #FFB648;
-  --amber-dim:  #7A5A22;
-  --cyan:       #57E0D8;
-  --cyan-dim:   #1E5750;
-  --coral:      #FF6B5B;
-  --text:       #ECEAF8;
-  --text-dim:   #A6A9C4;
+  --bg:         #EEF0F4;
+  --ink:        #1B2140;
+  --panel:      #FFFFFF;
+  --panel-2:    #F5F6FA;
+  --line:       #E4E6EF;
+  --paper:      #FFFFFF;
+  --amber:      #F3A63B;
+  --amber-dim:  #C97F1E;
+  --cyan:       #1E88E5;
+  --cyan-dim:   #E3F2FD;
+  --coral:      #E1523D;
+  --text:       #22263B;
+  --text-dim:   #6B7080;
 
   --radius-lg: 22px;
   --radius-md: 14px;
@@ -35,9 +35,7 @@ html{ -webkit-tap-highlight-color: transparent; }
 body{
   margin:0;
   min-height:100vh;
-  background: radial-gradient(1100px 700px at 15% -10%, #232853 0%, transparent 60%),
-              radial-gradient(900px 600px at 110% 10%, #1c2748 0%, transparent 55%),
-              var(--ink);
+  background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
   line-height: 1.55;
@@ -61,6 +59,7 @@ img{ max-width:100%; display:block; }
   gap:16px;
   padding: 18px 24px;
   border-bottom: 1px solid var(--line);
+  background: var(--panel);
 }
 .topbar .brand{
   display:flex;
@@ -70,12 +69,13 @@ img{ max-width:100%; display:block; }
   font-weight:700;
   font-size: 1.05rem;
   letter-spacing: 0.2px;
+  color: var(--ink);
 }
 .topbar .brand .mark{
   width: 30px; height:30px; border-radius: 8px;
   background: linear-gradient(135deg, var(--amber), var(--coral));
   display:grid; place-items:center;
-  color: var(--ink); font-weight:900; font-size:0.95rem;
+  color: #fff; font-weight:900; font-size:0.95rem;
 }
 .topbar .back{
   font-size:0.88rem;
@@ -103,9 +103,9 @@ img{ max-width:100%; display:block; }
 }
 .btn:active{ transform: scale(0.97); }
 .btn-primary{ background: var(--amber); color: var(--ink); }
-.btn-primary:hover{ filter: brightness(1.08); }
+.btn-primary:hover{ filter: brightness(1.05); }
 .btn-ghost{
-  background: transparent;
+  background: var(--panel);
   color: var(--text);
   border: 1px solid var(--line);
 }
@@ -131,6 +131,7 @@ img{ max-width:100%; display:block; }
   font-family: var(--font-display);
   font-size: clamp(1.5rem, 3vw, 2rem);
   margin: 0 0 6px;
+  color: var(--ink);
 }
 .game-head p{
   color: var(--text-dim);
@@ -142,6 +143,7 @@ img{ max-width:100%; display:block; }
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   padding: 28px;
+  box-shadow: 0 14px 32px rgba(27,33,64,0.08);
 }
 .hud{
   display:flex;
@@ -210,7 +212,7 @@ footer.site-footer{
 .stage-overlay{
   position:absolute;
   inset:0;
-  background: rgba(11,14,32,0.82);
+  background: rgba(17,20,38,0.78);
   display:flex;
   align-items:center;
   justify-content:center;
@@ -246,7 +248,7 @@ footer.site-footer{
 .modal-overlay{
   position:fixed;
   inset:0;
-  background: rgba(6,8,20,0.72);
+  background: rgba(17,20,38,0.62);
   display:flex;
   align-items:center;
   justify-content:center;
@@ -263,11 +265,13 @@ footer.site-footer{
   width:100%;
   text-align:center;
   position:relative;
+  box-shadow: 0 20px 48px rgba(27,33,64,0.18);
 }
 .modal-card h2{
   font-family: var(--font-display);
   font-size: 1.1rem;
   margin: 0 0 6px;
+  color: var(--ink);
 }
 .modal-close{
   position:absolute;
@@ -291,10 +295,24 @@ footer.site-footer{
 .rank-list li{
   display:flex;
   justify-content:space-between;
+  align-items:center;
   gap: 10px;
   padding: 9px 4px;
   border-bottom: 1px solid var(--line);
   font-size: 0.92rem;
+}
+.rank-list li span:first-child{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  flex: 1 1 auto;
+  min-width:0;
+}
+.rank-list li span:last-child{
+  flex: 0 0 auto;
+  white-space:nowrap;
+  color: var(--cyan);
+  font-weight:700;
 }
 .rank-list li:last-child{ border-bottom:none; }
 .rank-empty{

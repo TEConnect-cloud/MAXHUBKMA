@@ -43,7 +43,7 @@
     div.innerHTML = `
       <div class="modal-card">
         <h2>🎉 완료! 이름을 입력해주세요</h2>
-        <input type="text" id="nameInputField" class="name-input" maxlength="8" placeholder="이름 (최대 8자)">
+        <input type="text" id="nameInputField" class="name-input" maxlength="20" placeholder="회사명 이름 (예: 테크커넥트 홍길동)">
         <div style="margin-top:6px;">
           <button class="btn btn-primary" id="nameSubmitBtn">랭킹 등록</button>
         </div>
@@ -55,7 +55,7 @@
     add(id, name, value, display, order){
       order = order || 'asc';
       const list = load(id);
-      list.push({ name: (name || '익명').slice(0,8), value, display, date: Date.now() });
+      list.push({ name: (name || '익명').slice(0,20), value, display, date: Date.now() });
       list.sort((a,b)=> order==='asc' ? a.value - b.value : b.value - a.value);
       persist(id, list);
     },
