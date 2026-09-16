@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>미로찾기 · 테크커넥트 게임 이벤트</title>
+<title>공간지각력 검사 · 테크커넥트 게임 이벤트</title>
 <link rel="stylesheet" href="style.css">
 <style>
   :root {
@@ -134,7 +134,7 @@
 
 <div class="game-wrapper" id="gameWrapper">
   <div class="header-panel">
-    <h1>미로찾기</h1>
+    <h1>공간지각력 검사</h1>
     <div class="timer-display">⏱ 남은 시간 <span id="timer">300</span>초</div>
   </div>
 
@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const showRankingBtn = document.getElementById('showRankingBtn');
 
     const GAME_ID = 'maze';
-    const GAME_TITLE = '미로찾기';
+    const GAME_TITLE = '공간지각력 검사';
 
     let cols, rows, cellSize, maze, player, rabbit, stack = [];
     let isGameRunning = false, isPaused = false, isDragging = false;
