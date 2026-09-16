@@ -181,7 +181,7 @@ body {
     </div>
     <div class="action-controls">
       <button id="showRankingBtn">랭킹 보기</button>
-      <button id="pauseButton">멈추기</button>
+      <button id="pauseButton">일시정지</button>
       <button id="mainRestartButton">다시하기</button>
       <a href="index.html" class="home-btn">메인으로</a>
     </div>
@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timeElapsed = 0;
         timeLeft = currentConfig.time;
 
-        pauseButton.textContent = '멈추기';
+        pauseButton.textContent = '일시정지';
         gameOverModal.style.display = 'none';
         pauseOverlay.style.display = 'none';
         updateMatchCounter();
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function togglePause() {
         isPaused = !isPaused;
-        pauseButton.textContent = isPaused ? '계속하기' : '멈추기';
+        pauseButton.textContent = isPaused ? '계속하기' : '일시정지';
         pauseOverlay.style.display = isPaused ? 'flex' : 'none';
     }
 
@@ -405,11 +405,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isSuccess) {
                 const minutes = Math.floor(timeElapsed / 60);
                 const seconds = timeElapsed % 60;
-                modalMessage.textContent = '🎉 축하합니다! 성공! 🎉';
+                modalMessage.textContent = '🎉 성공! 🎉';
                 modalDetail.textContent = `걸린 시간: ${minutes > 0 ? `${minutes}분 ` : ''}${seconds}초`;
 
                 const storageKey = `${GAME_ID}_${currentLevelId}`;
-                Ranking.promptNameAndSave(storageKey, `전자칠판 용어 짝 맞추기 (${currentConfig.name})`, timeElapsed, `${minutes > 0 ? `${minutes}분 ` : ''}${seconds}초`, 'asc');
+                Ranking.promptNameAndSave(storageKey, `전자칠판 용어 짝 맞추기`, timeElapsed, `${minutes > 0 ? `${minutes}분 ` : ''}${seconds}초`, 'asc');
 
             } else {
                 modalMessage.textContent = '😭 아쉽네요, 시간 초과! 😭';
@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showRankingBtn.addEventListener('click', () => {
         const storageKey = `${GAME_ID}_${currentLevelId}`;
-        Ranking.showModal(storageKey, `전자칠판 용어 짝 맞추기 (${currentConfig.name})`);
+        Ranking.showModal(storageKey, `전자칠판 용어 짝 맞추기`);
     });
 
     pauseButton.addEventListener('click', togglePause);
