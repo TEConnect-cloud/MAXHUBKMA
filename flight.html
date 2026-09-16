@@ -333,11 +333,11 @@ function renderResult(r){
         </div>
         <div class="calc-line">
           <b>② 준비·대기 비용</b><br>
-          주 ${r.labels[0]} × (${r.labels[4]} ÷ 60) × 참석 ${r.labels[2]} × ${formatExact(r.hourlyWage)} × 52주 = <b>${formatWon(r.prepCost)}</b>
+          주 ${r.labels[0]} × (${r.labels[4]} ÷ 60분) × 참석 ${r.labels[2]} × ${formatExact(r.hourlyWage)} × 52주 = <b>${formatWon(r.prepCost)}</b>
         </div>
         <div class="calc-line">
           <b>③ 회의 후 정리 비용</b><br>
-          주 ${r.labels[0]} × (${r.labels[5]} ÷ 60) × 정리담당 1명 × ${formatExact(r.hourlyWage)} × 52주 = <b>${formatWon(r.afterCost)}</b>
+          주 ${r.labels[0]} × (${r.labels[5]} ÷ 60분) × 정리담당 1명 × ${formatExact(r.hourlyWage)} × 52주 = <b>${formatWon(r.afterCost)}</b>
         </div>
         <div class="calc-line total">
           <b>총합 (①+②+③)</b> = <b>${formatWon(r.totalCost)}</b>
