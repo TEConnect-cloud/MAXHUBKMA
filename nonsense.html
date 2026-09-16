@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>스피드 넌센스 퀴즈 · 테크커넥트 게임 이벤트</title>
+<title>순발력 검사 · 테크커넥트 게임 이벤트</title>
 <link rel="stylesheet" href="style.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
@@ -118,7 +118,7 @@ h1 { color: #2c3e50; flex-shrink: 0; font-size: clamp(1.5rem, 5vw, 2.2rem); }
 <body>
 
 <div class="game-container">
-  <h1>스피드 넌센스 퀴즈</h1>
+  <h1>순발력 검사</h1>
 
   <div class="game-info-panel">
     <div class="timer-bar"><div class="timer-progress" id="timer-progress"></div></div>
@@ -460,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showAndRegisterRanking() {
-        Ranking.promptNameAndSave(GAME_ID, "넌센스 퀴즈", score, `${score}점`, 'desc');
+        Ranking.promptNameAndSave(GAME_ID, "순발력 검사", score, `${score}점`, 'desc');
     }
 
     function setupPen() {
@@ -484,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function stopDrawing() { isDrawing = false; }
     function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
-    rankingBtn.addEventListener('click', () => { Ranking.showModal(GAME_ID, "넌센스 퀴즈"); });
+    rankingBtn.addEventListener('click', () => { Ranking.showModal(GAME_ID, "순발력 검사"); });
 
     clearBtn.addEventListener('click', clearCanvas);
     hintBtn.addEventListener('click', showHint);

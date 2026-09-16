@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>캐치마인드 · 테크커넥트 게임 이벤트</title>
+<title>표현력 검사 · 테크커넥트 게임 이벤트</title>
 <link rel="stylesheet" href="style.css">
 <style>
   #drawCanvas{
@@ -54,7 +54,7 @@
 
 <main class="game-shell">
   <div class="game-head">
-    <h1>🎨 캐치마인드</h1>
+    <h1>🎨 표현력 검사</h1>
     <p>한 사람이 제시어를 보고 그림을 그리면, 다른 사람이 맞혀보세요.</p>
   </div>
 
@@ -67,7 +67,7 @@
       <button class="btn btn-ghost" onclick="newRound()">새 제시어 뽑기</button>
       <button class="btn btn-ghost" id="revealBtn" onclick="toggleReveal()">제시어 보기</button>
       <button class="btn btn-ghost" id="correctBtn" onclick="markCorrect()">✅ 정답</button>
-      <button class="btn btn-ghost" onclick="Ranking.showModal('catchmind','캐치마인드')">랭킹 보기</button>
+      <button class="btn btn-ghost" onclick="Ranking.showModal('catchmind','표현력 검사')">랭킹 보기</button>
     </div>
 
     <div id="canvasWrap">
@@ -199,7 +199,7 @@ function markCorrect(){
 
 function openRankingEntry(){
   document.getElementById('resultModal').classList.add('hidden');
-  Ranking.promptNameAndSave('catchmind', '캐치마인드', lastElapsed, `${lastElapsed}초`, 'asc');
+  Ranking.promptNameAndSave('catchmind', '표현력 검사', lastElapsed, `${lastElapsed}초`, 'asc');
 }
 
 function closeResultModal(){
